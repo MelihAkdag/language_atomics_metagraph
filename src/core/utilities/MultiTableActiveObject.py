@@ -21,11 +21,11 @@ class MultiTableActiveObject:
 			field_type	= field[ndx+1:]
 			field		= field[:ndx]
 			
-		return (field, self.GetPropTable(field_type))
+		return (field, self.get_property_table(field_type))
 				
 	def __getitem__(self, field):
-		if self.IsProperty(field) == False:
-			return self.rec.Get(self.id, field)
+		if self.is_property(field) == False:
+			return self.rec.get(self.id, field)
 
 		rfield	= self.get_meta_property(field)
 		field	= rfield[0]
@@ -42,8 +42,8 @@ class MultiTableActiveObject:
 		
 		
 	def __setitem__(self, field, value):
-		if self.IsProperty(field) == False:
-			return self.rec.Set(self.id, field, value)
+		if self.is_property(field) == False:
+			return self.rec.set(self.id, field, value)
 
 		rfield	= self.get_meta_property(field)
 		field	= rfield[0]

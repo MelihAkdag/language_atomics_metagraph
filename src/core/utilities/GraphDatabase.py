@@ -75,8 +75,8 @@ class Vertex(MultiTableActiveObject):
 		return self.set_value( self.get_value()+value )
 
 class GraphDatabase:
-	def __init__(self, dbpath:str, graph_id=-1):
-		self.conn		= GraphDatabaseConnection(dbpath)
+	def __init__(self, dbpath:str, graph_id=-1, conn=None):
+		self.conn		= conn if conn is not None else GraphDatabaseConnection(dbpath)
 		self.graph_id	= graph_id
 		self.db			= None
 		return
@@ -89,6 +89,9 @@ class GraphDatabase:
 		return self.db
 	
 	def create(self, name, graph_type, guid=None, description=None, metadata=None):
+		if self.open(name, guid) == True:
+			return
+		
 		if metadata == None:
 			metadata	= ''
 
@@ -99,7 +102,7 @@ class GraphDatabase:
 			guid	= str(uuid.uuid1()).lower()
 		elif isinstance(guid, uuid.UUID):
 			guid	= str(guid).lower()
-			
+	
 		values = {
 			'guid': guid,
 			'name':name,
@@ -181,6 +184,8 @@ class GraphDatabase:
 		return Vertex( v, v.add(values) )
 
 	def is_Vertex(self, vid):
+		if isinstance(vid, Vertex):
+			return (self.get_vertex_id(vid.id) != None)
 		if isinstance(vid, int):
 			return (self.get_vertex_id(vid) != None)
 		elif isinstance(vid, uuid.UUID):
@@ -191,6 +196,8 @@ class GraphDatabase:
 		return (len(ids)!=0)
 
 	def get_arc(self, aid):
+		if isinstance(aid, Arc):
+			return aid
 		if isinstance(aid, int):
 			return Arc( self.__get_arc_model(), aid )
 		elif isinstance(aid, uuid.UUID):
@@ -203,6 +210,8 @@ class GraphDatabase:
 		return Arc( self.__get_arc_model(), ids[0] )
 
 	def get_vertex(self, vid, type=None):
+		if isinstance(vid, Vertex):
+			return vid
 		if isinstance(vid, int):
 			return Vertex( self.__get_vertex_model(), vid )
 		elif isinstance(vid, uuid.UUID):
@@ -225,6 +234,9 @@ class GraphDatabase:
 		return self.add_vertex(name, vert_type, guid, value)
 		
 	def get_vertex_id(self, vid):
+		if isinstance(vid, Vertex):
+			return vid.id
+		
 		guid	= None
 		if isinstance(vid, uuid.UUID):
 			guid = str(vid).lower()
@@ -305,9 +317,9 @@ class GraphDatabase:
 		arcid	= self.get_arc_id(fromid, toid)
 		
 		if arcid != None:
-			Arc = Arc( self.__get_arc_model(), arcid )
-			Arc['weight'] = weight
-			return Arc
+			arc = Arc( self.__get_arc_model(), arcid )
+			arc['weight'] = weight
+			return arc
 
 		if guid == None:
 			guid	= str(uuid.uuid1()).lower()
@@ -325,6 +337,7 @@ class GraphDatabase:
 			'name':name,
 			'start': fromid,
 			'end': toid,
+			'anchor': 0,
 			'weight': weight,
 			'type': arc_type }
 		
