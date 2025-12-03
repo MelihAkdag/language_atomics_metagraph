@@ -199,6 +199,8 @@ for lemmatized_sentence in lemmatized_sentences:
 # %%
 # CHUNKING 
 
+import matplotlib.pyplot as plt
+
 # TODO: We need to work on the grammer template to make it better suited for our needs
 
 # Define chunk grammar
@@ -210,18 +212,20 @@ grammar = r"""
   ADVP: {<RB.*>+}                       #  Adverb Phrase: one or more adverbs
 """
 
-
+tree_sentences = []
 chunk_parser = nltk.RegexpParser(grammar)
 for filtered_sentence in filtered_sentences:
     tokens = word_tokenize(filtered_sentence)
     tags = pos_tag(tokens)
-    tree = chunk_parser.parse(tags)
+    sentence_tree = chunk_parser.parse(tags)
+    tree_sentences.append(sentence_tree)
     print("Filtered Sentence:", filtered_sentence)
-    print(tree)      # Shows chunk structure
+    print(sentence_tree)      # Shows chunk structure
     print("\n")
-    #tree.pretty_print() # Visual tree diagram
 
-
+# Visualize the sentence trees
+for sentence_tree in tree_sentences:
+    sentence_tree.draw()
 
 
 # %%
