@@ -2,6 +2,8 @@
 # Filename: test_Concept.py
 # Description: Test cases for the Concept class
 
+from cor.knowledge.Concept import Concept
+
 import unittest
 
 class ConceptTestCase(unittest.TestCase):

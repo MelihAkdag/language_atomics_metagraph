@@ -1,14 +1,13 @@
 #!/usr/bin/python
-# Filename: ConceptCloud.py
-# Description: Implementation of the ConceptCloud class
+# Filename: Conception.py
+# Description: Implementation of the Conception class
 
-class ConceptCloud:
+class Conception:
 	def __init__(self):
-		print( "Hello" )
 		return
 
 		
 
 if __name__ == "__main__":
-	test = ConceptCloud()
+	test = Conception()
 

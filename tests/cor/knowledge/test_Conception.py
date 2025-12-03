@@ -2,6 +2,9 @@
 # Filename: test_ConceptCloud.py
 # Description: Test cases for the ConceptCloud class
 
+from cor.knowledge.Conception import Conception
+from cor.knowledge.Concept import Concept
+
 import unittest
 
 class ConceptCloudTestCase(unittest.TestCase):
