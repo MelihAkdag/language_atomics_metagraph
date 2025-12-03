@@ -1,18 +1,19 @@
 # %%
 """
-##########################################################
 # SOME TOOLS WE CAN USE FROM NLTK LIBRARY
-##########################################################
 
 * Classification: Assigning a label or category to a piece of text. TODO: Can we use it for converting "not" into "False"?
 
 * Tokenization: Breaking text into smaller units (tokens), usually words or sentences.
 
-* Stemming: Reducing words to their root form by chopping off suffixes (not always a real word). Example: "running", "runs", "runner" → "run". Probably we can use lemmatization instead of stemming.
+* Stemming: Reducing words to their root form by chopping off suffixes (not always a real word). 
+  Example: "running", "runs", "runner" → "run". Probably we can use lemmatization instead of stemming.
 
-* Lemmatization: Reducing words to their base or dictionary form (unlike stemming, it produces real words). Example: "running" → "run", "better" → "good". TODO: Do we want to keep tenses?
+* Lemmatization: Reducing words to their base or dictionary form (unlike stemming, it produces real words). 
+  Example: "running" → "run", "better" → "good". TODO: Do we want to keep tenses?
 
-* Tagging (Part-of-speech (POS) tagging): Assigning grammatical tags to words (noun, verb, adjective, adverb). Example: "I love NLP" → [("I", PRON), ("love", VERB), ("NLP", NOUN)]. TODO: Make a list of tags.
+* Tagging (Part-of-speech (POS) tagging): Assigning grammatical tags to words (noun, verb, adjective, adverb). 
+  Example: "I love NLP" → [("I", PRON), ("love", VERB), ("NLP", NOUN)].
 
         CC    Coordinating conjunction       and, but, or
         CD    Cardinal number                one, two, 3
@@ -52,20 +53,28 @@
         WRB   Wh-adverb                      where, when
 
 
-* Parsing: Analyzing the grammatical structure of a sentence (syntax tree). Example: "The cat sat on the mat" → A tree showing subject, verb, object, etc.
+* Parsing: Analyzing the grammatical structure of a sentence (syntax tree). 
+  Example: "The cat sat on the mat" → A tree showing subject, verb, object, etc.
 
-* Chunking: Grouping words into meaningful phrases (like noun phrases or verb phrases). Example: "The big dog" → [NP The big dog].
+* Chunking: Grouping words into meaningful phrases (like noun phrases or verb phrases). 
+  Chunking is shallow parsing. Instead of building a full syntax tree (like parsing), chunking groups words into meaningful phrases based on their POS tags. 
+  Example: "The big dog" → [NP The big dog].
 
-* Named entity recognition (NER): Identifying and classifying named entities in text (like people, organizations, locations). Example: "Barack Obama was born in Hawaii" → [("Barack Obama", PERSON), ("Hawaii", LOCATION)].
-
-* Dependency parsing: Finding relationships between words (subject, object, modifiers). Example: "The cat chased the mouse" → cat (subject) → chased (verb) → mouse (object).
+* Named entity recognition (NER): Identifying and classifying named entities in text (like people, organizations, locations). 
+  Example: "Barack Obama was born in Hawaii" → [("Barack Obama", PERSON), ("Hawaii", LOCATION)].
+    
+* Dependency parsing: Finding relationships between words (subject, object, modifiers). 
+  Example: "The cat chased the mouse" → cat (subject) → chased (verb) → mouse (object).
 
 * Semantic Reasoning: Understanding meaning and relationships beyond syntax.
 
 """
 
 # %%
+# IMPORTS
+
 import nltk
+import string
 from nltk import pos_tag
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords, wordnet
@@ -78,27 +87,24 @@ from nltk.stem import WordNetLemmatizer
 # nltk.download('wordnet')
 # nltk.download('averaged_perceptron_tagger_eng')
 
-# %%
-# Remove line breaks and join sentences
+# %% 
+# FUNCTIONS
+
 def remove_line_breaks(text):
     """ Remove line breaks from the text """
     return text.replace('\n', ' ')
 
-# Remove multiple spaces
 def remove_multiple_spaces(text):
     """ Remove multiple spaces from the text """
     return ' '.join(text.split())
 
-# Lowercase the text
 def lowercase_text(text):
     """ Lowercase the text """
     return text.lower()
 
-# Split into sentences
 def split_into_sentences(text):
     """ Split text into sentences """
     return sent_tokenize(text)
-
 
 def get_wordnet_pos(treebank_tag):
     """ Convert Penn Treebank POS tag to WordNet POS tag """
@@ -113,7 +119,6 @@ def get_wordnet_pos(treebank_tag):
     else:
         return wordnet.NOUN  # Default to noun
 
-
 def pos_tag_and_lemmatize(text):
     """ Function to POS tag and lemmatize input text """
     tokens = word_tokenize(text)
@@ -122,11 +127,21 @@ def pos_tag_and_lemmatize(text):
     lemmatized_sentence = ' '.join(lemmatized_tokens)
     return tags, lemmatized_tokens, lemmatized_sentence
 
+def clean_sentence(sentence, punctuation):
+    """ Remove stop words and punctuation from a sentence, keeping only specified POS tags """
+    tokens = word_tokenize(sentence)
+        
+    filtered_tokens = []
+    for word in tokens:
+        # Keep almost everything except punctuation and very common stopwords
+        if word not in punctuation and word.lower() not in {'the', 'a', 'an', ',', ';', '!', '.'}:
+            filtered_tokens.append(word.lower())
+    filtered_sentence = ' '.join(filtered_tokens)
+    return filtered_tokens, filtered_sentence
+
 
 # %%
-##########################################################
-# IMPLEMENTATION EXAMPLE
-##########################################################
+# EXAMPLE TEXT
 
 sample_text = """ This is the most favourable period for travelling in Russia. They fly
 quickly over the snow in their sledges; the motion is pleasant, and, in
@@ -138,18 +153,26 @@ prevents the blood from actually freezing in your veins. I have no
 ambition to lose my life on the post-road between St. Petersburgh and
 Archangel."""
 
-# Text cleaning
+# %%
+# TEXT CLEANING AND PROCESSING
+
 cleaned_text = remove_line_breaks(sample_text)
 cleaned_text = remove_multiple_spaces(cleaned_text)
 cleaned_text = lowercase_text(cleaned_text)
 
-# Sentence splitting
+print("Cleaned Text:\n", cleaned_text)
+
+# %%
+# SPLIT INTO SENTENCES
+
 sentences = split_into_sentences(cleaned_text)
 for sentence in sentences:
     print("Sentence:", sentence)
 print("\n")
 
-# Lemmatization and POS tagging
+# %%
+# LEMMATIZATION AND POS TAGGING
+
 lemmatizer = WordNetLemmatizer()
 lemmatized_sentences = []
 for sentence in sentences:
@@ -160,8 +183,45 @@ for sentence in sentences:
     print("Lemmatized sentence:", lemmatized_sentence)
     print("\n")
 
-# Stop words
-stop_words = set(stopwords.words('english'))
+# %%
+# REMOVE SOME STOP WORDS AND PUNCTUATION
+punctuation = set(string.punctuation)
+
+filtered_sentences = []
+for lemmatized_sentence in lemmatized_sentences:
+    filtered_tokens, filtered_sentence = clean_sentence(lemmatized_sentence, punctuation)
+    filtered_sentences.append(filtered_sentence)
+    print("Lemmatized Sentence:", lemmatized_sentence)
+    print("Filtered Sentence  :", filtered_sentence)
+    print("\n")
+
+
+# %%
+# CHUNKING 
+
+# TODO: We need to work on the grammer template to make it better suited for our needs
+
+# Define chunk grammar
+grammar = r"""
+  NP: {<DT|PDT>?<RB.*>*<JJ.*>*<NN.*>}   # Noun Phrase: optional determiner, adjectives, noun. Allow RB/RBR/RBS before JJ, and NN.*, not only NN
+  VP: {<VB.*><RB.*>*<NP|PP|ADJP>*}      # Verb Phrase: Groups verbs and optional adverbs or noun phrases. Less greedy and allow complements after verb
+  PP: {<IN><NP>}                        # Prepositional Phrase: preposition followed by noun phrase
+  ADJP: {<RB.*>*<JJ.*>+}                # Adjective Phrase: one or more adjectives
+  ADVP: {<RB.*>+}                       #  Adverb Phrase: one or more adverbs
+"""
+
+
+chunk_parser = nltk.RegexpParser(grammar)
+for filtered_sentence in filtered_sentences:
+    tokens = word_tokenize(filtered_sentence)
+    tags = pos_tag(tokens)
+    tree = chunk_parser.parse(tags)
+    print("Filtered Sentence:", filtered_sentence)
+    print(tree)      # Shows chunk structure
+    print("\n")
+    #tree.pretty_print() # Visual tree diagram
+
+
 
 
 # %%
