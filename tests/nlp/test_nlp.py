@@ -98,6 +98,14 @@ def remove_multiple_spaces(text):
     """ Remove multiple spaces from the text """
     return ' '.join(text.split())
 
+def remove_quatation_marks(text):
+    """ Remove quotation marks from the text """
+    return text.replace('“', '').replace('”', '').replace('"', '')
+
+def change_colons_and_semicolons_to_periods(text):
+    """ Change colons and semicolons to periods """
+    return text.replace(':', '.').replace(';', '.')
+
 def lowercase_text(text):
     """ Lowercase the text """
     return text.lower()
@@ -130,11 +138,11 @@ def pos_tag_and_lemmatize(text):
 def clean_sentence(sentence, punctuation):
     """ Remove stop words and punctuation from a sentence, keeping only specified POS tags """
     tokens = word_tokenize(sentence)
-        
+    
     filtered_tokens = []
     for word in tokens:
         # Keep almost everything except punctuation and very common stopwords
-        if word not in punctuation and word.lower() not in {'the', 'a', 'an', ',', ';', '!', '.'}:
+        if word not in punctuation and word.lower() not in {'the', 'a', 'an', '?', '!', '.'}:
             filtered_tokens.append(word.lower())
     filtered_sentence = ' '.join(filtered_tokens)
     return filtered_tokens, filtered_sentence
@@ -143,21 +151,20 @@ def clean_sentence(sentence, punctuation):
 # %%
 # EXAMPLE TEXT
 
-sample_text = """ This is the most favourable period for travelling in Russia. They fly
-quickly over the snow in their sledges; the motion is pleasant, and, in
-my opinion, far more agreeable than that of an English stagecoach. The
-cold is not excessive, if you are wrapped in furs—a dress which I have
-already adopted, for there is a great difference between walking the
-deck and remaining seated motionless for hours, when no exercise
-prevents the blood from actually freezing in your veins. I have no
-ambition to lose my life on the post-road between St. Petersburgh and
-Archangel."""
+sample_text = """ “Come, dearest Victor; you alone can console Elizabeth. She weeps
+continually, and accuses herself unjustly as the cause of his death;
+her words pierce my heart. We are all unhappy; but will not that be an
+additional motive for you, my son, to return and be our comforter?
+Your dear mother! Alas, Victor! I now say, Thank God she did not live
+to witness the cruel, miserable death of her youngest darling!"""
 
 # %%
 # TEXT CLEANING AND PROCESSING
 
 cleaned_text = remove_line_breaks(sample_text)
 cleaned_text = remove_multiple_spaces(cleaned_text)
+cleaned_text = remove_quatation_marks(cleaned_text)
+cleaned_text = change_colons_and_semicolons_to_periods(cleaned_text)
 cleaned_text = lowercase_text(cleaned_text)
 
 print("Cleaned Text:\n", cleaned_text)
@@ -199,8 +206,6 @@ for lemmatized_sentence in lemmatized_sentences:
 # %%
 # CHUNKING 
 
-import matplotlib.pyplot as plt
-
 # TODO: We need to work on the grammer template to make it better suited for our needs
 
 # Define chunk grammar
@@ -209,7 +214,7 @@ grammar = r"""
   VP: {<VB.*><RB.*>*<NP|PP|ADJP>*}      # Verb Phrase: Groups verbs and optional adverbs or noun phrases. Less greedy and allow complements after verb
   PP: {<IN><NP>}                        # Prepositional Phrase: preposition followed by noun phrase
   ADJP: {<RB.*>*<JJ.*>+}                # Adjective Phrase: one or more adjectives
-  ADVP: {<RB.*>+}                       #  Adverb Phrase: one or more adverbs
+  ADVP: {<RB.*>+}                       # Adverb Phrase: one or more adverbs
 """
 
 tree_sentences = []
@@ -224,8 +229,100 @@ for filtered_sentence in filtered_sentences:
     print("\n")
 
 # Visualize the sentence trees
-for sentence_tree in tree_sentences:
-    sentence_tree.draw()
+# for sentence_tree in tree_sentences:
+#    sentence_tree.draw()
 
 
 # %%
+"""
+# TEMPLATES
+Denotation:   (DT|EX|<NN.*>|PRP|PRP$+(NN/NNS)|<NN.*>+POS+<NN.*>) -> is|be|was|were|... -> (DT|EX|<NN.*>|PRP|PRP$+(NN/NNS)|<NN.*>+POS+<NN.*>)
+Collection/Attribution/Classification:  (DT|EX|<NN.*>|PRP|PRP$+(NN/NNS)|<NN.*>+POS+<NN.*>) -> has|had|to own|contain|... -> (<RB.*>|<JJ.*>)
+Operation:    (DT|EX|<NN.*>|PRP|PRP$+(NN/NNS)|<NN.*>+POS+<NN.*>) -> (<VB.*> except (is|be|was|were|...) and (has|had|to own|contain|...)) and (to|for + <VB.*>)  -> (DT|EX|<NN.*>|PRP|PRP$+(NN/NNS)|<NN.*>+POS+<NN.*>)
+
+# EXAMPLE
+Sentence: this be most favourable period for travel in russia
+Denotation:   this (DT|EX|<NN.*>|PRP|PRP$+(NN/NNS)|<NN.*>+POS+<NN.*>) -> is|be|was|were|... -> period (DT|EX|<NN.*>|PRP|PRP$+(NN/NNS)|<NN.*>+POS+<NN.*>)
+Attribution:  period (DT|EX|<NN.*>|PRP|PRP$+(NN/NNS)|<NN.*>+POS+<NN.*>) -> has|had|to own|contain|... -> most favourable (<RB.*>|<JJ.*>)
+Operation:    this (DT|EX|<NN.*>|PRP|PRP$+(NN/NNS)|<NN.*>+POS+<NN.*>) -> (<VB.*> except (is|be|was|were|...) and (has|had|to own|contain|...)) and (to|for + <VB.*>)  -> travel (DT|EX|<NN.*>|PRP|PRP$+(NN/NNS)|<NN.*>+POS+<NN.*>)
+Operation:    travel (DT|EX|<NN.*>|PRP|PRP$+(NN/NNS)|<NN.*>+POS+<NN.*>) -> (<VB.*> except (is|be|was|were|...) and (has|had|to own|contain|...)) and (to|for + <VB.*>) -> russia (DT|EX|<NN.*>|PRP|PRP$+(NN/NNS)|<NN.*>+POS+<NN.*>)
+
+# OUTPUT SHOULD BE SIMILAR TO THIS:
+this(INSTANCE){
+    IS(DENOTATION) period(INSTANCE);
+    TO(OPERATION) travel(INSTANCE);
+}
+
+this.period{
+    HAS(ATTRIBUTION) most-favourable(PROPERTY);
+}
+
+this.travel{
+    TO(OPERATION) russia(INSTANCE);
+}
+
+"""
+# %%
+# -------------------------
+# 1) Chunk grammar 
+# -------------------------
+
+grammar = r"""
+  NP:   {<DT|PDT>?<RB.*>*<JJ.*>*<NN.*>+|<EX>|<PRP>|<PRP\$><NN.*>+|<NN.*><POS><NN.*>+}
+  NP:   {<NNP|NNPS>+}
+  NP:   {<NP><CC><NP>}
+  PP:   {<IN><NP>}
+  ADJP: {<RB.*>*<JJ.*>+}
+  ADVP: {<RB.*>+}
+  INF:  {<TO><VB.*>(<NP|PP|ADJP|ADVP>*)}
+  NP:   {<NP><INF>}
+  NP:   {<NP><PP>+}
+  VP:   {<VB.*><RB.*>*<NP|PP|ADJP|ADVP|INF>*}
+  NP:   {<DT>}
+"""
+
+
+chunk_parser = nltk.RegexpParser(grammar)
+wnl = WordNetLemmatizer()
+
+# quick sanity check
+s = "she weep continually and accuse herself unjustly cause of his death"
+tags = pos_tag(word_tokenize(s))
+tree = chunk_parser.parse(tags)
+print(s)
+print(tree)
+# tree.draw()
+
+# %%
+COPULA_FORMS = {
+    "be","is","am","are","was","were","been","being"
+}
+
+HAVE_LIKE_LEMMAS = {
+    "have","has","had","own","contain","possess","hold","include","feature","carry","bear"
+}
+print(tree)
+print(list(tree.subtrees()))
+
+
+def match_attribution(tokens, tags, np_chunks):
+    """
+    1) Verb-driven: EntitySlot -> have-like -> RB*/JJ+
+    2) NP-internal derived: NP: [RB* JJ+] + NN => NN HAS property
+    Returns list of dicts: {'entity','property'}
+    """
+    matches = [] # [{'entity':'property'}, ...]
+    return matches
+
+
+def extract_templates_from_sentence(sentence):
+    tokens = word_tokenize(sentence)
+    tags   = pos_tag(tokens)
+    tree   = chunk_parser.parse(tags)
+
+    # collect NP chunks for NP-internal attribution
+    np_chunks = [sub for sub in tree.subtrees(lambda t: t.label() == "NP")]
+
+    attributions  = match_attribution(tokens, tags, np_chunks)
+
+    return attributions
