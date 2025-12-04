@@ -263,30 +263,31 @@ this.travel{
 
 """
 # %%
-# -------------------------
-# 1) Chunk grammar 
-# -------------------------
+# NEW GRAMMER TEMPLATE FOR CHUNKING
 
 grammar = r"""
   NP:   {<DT|PDT>?<RB.*>*<JJ.*>*<NN.*>+|<EX>|<PRP>|<PRP\$><NN.*>+|<NN.*><POS><NN.*>+}
   NP:   {<NNP|NNPS>+}
-  NP:   {<NP><CC><NP>}
-  PP:   {<IN><NP>}
+  NP:   {<DT>}
   ADJP: {<RB.*>*<JJ.*>+}
   ADVP: {<RB.*>+}
+  PP:   {<IN><NP>}
   INF:  {<TO><VB.*>(<NP|PP|ADJP|ADVP>*)}
   NP:   {<NP><INF>}
   NP:   {<NP><PP>+}
-  VP:   {<VB.*><RB.*>*<NP|PP|ADJP|ADVP|INF>*}
-  NP:   {<DT>}
+  NP:   {<NP><CC><NP>}
+  VP:   {<MD>?<VB.*><RB.*>*<NP|PP|ADJP|ADVP|INF>*}  # Added modal support
+  VP:   {<VP><CC><VP>}
+  SENT: {<NP><VP>}
+  SENT: {<EX><VP>}  # Existential: "There is..."
+  SENT: {<VP>}      # Imperative: "Come here!"
 """
-
 
 chunk_parser = nltk.RegexpParser(grammar)
 wnl = WordNetLemmatizer()
 
 # quick sanity check
-s = "she weep continually and accuse herself unjustly cause of his death"
+s = "i now say thank god she do not live to witness cruel miserable death of her young darling"
 tags = pos_tag(word_tokenize(s))
 tree = chunk_parser.parse(tags)
 print(s)
@@ -294,35 +295,5 @@ print(tree)
 # tree.draw()
 
 # %%
-COPULA_FORMS = {
-    "be","is","am","are","was","were","been","being"
-}
 
-HAVE_LIKE_LEMMAS = {
-    "have","has","had","own","contain","possess","hold","include","feature","carry","bear"
-}
-print(tree)
-print(list(tree.subtrees()))
-
-
-def match_attribution(tokens, tags, np_chunks):
-    """
-    1) Verb-driven: EntitySlot -> have-like -> RB*/JJ+
-    2) NP-internal derived: NP: [RB* JJ+] + NN => NN HAS property
-    Returns list of dicts: {'entity','property'}
-    """
-    matches = [] # [{'entity':'property'}, ...]
-    return matches
-
-
-def extract_templates_from_sentence(sentence):
-    tokens = word_tokenize(sentence)
-    tags   = pos_tag(tokens)
-    tree   = chunk_parser.parse(tags)
-
-    # collect NP chunks for NP-internal attribution
-    np_chunks = [sub for sub in tree.subtrees(lambda t: t.label() == "NP")]
-
-    attributions  = match_attribution(tokens, tags, np_chunks)
-
-    return attributions
+# %%
