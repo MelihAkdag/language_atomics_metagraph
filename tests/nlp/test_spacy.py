@@ -73,6 +73,61 @@ def build_and_plot_knowledge_graph_matplotlib(srl_results):
     plt.show()
 
 # %%
+# Build and plot the knowledge graph with pyvis
+from pyvis.network import Network
+
+def build_and_plot_knowledge_graph_html(srl_results, filename="knowledge_graph.html"):
+    G = nx.DiGraph()
+    
+    for result in srl_results:
+        subjects = result['subjects']
+        verbs = result['verbs']
+        objects = result['objects']
+        indirect_objects = result['indirect_objects']
+        
+        for subject in subjects:
+            for verb in verbs:
+                for obj in objects:
+                    G.add_edge(subject, obj, label=verb)
+                for ind_obj in indirect_objects:
+                    G.add_edge(subject, ind_obj, label=verb)
+    
+    # Enhanced configuration for better visualization
+    pyvis_nt = Network(
+        height="1000px", 
+        width="100%", 
+        bgcolor="#222222", 
+        font_color="white",
+        notebook=True, 
+        directed=True, 
+        cdn_resources='in_line'
+    )
+    
+    # Configure physics for better layout
+    pyvis_nt.set_options("""
+    var options = {
+      "physics": {
+        "enabled": true,
+        "stabilization": {
+          "iterations": 200
+        }
+      }
+    }
+    """)
+    
+    pyvis_nt.from_nx(G)
+    
+    # Write with UTF-8 encoding to handle special characters
+    import os
+    html = pyvis_nt.generate_html()
+    with open(filename, 'w', encoding='utf-8') as f:
+        f.write(html)
+    
+    print(f"Graph saved to {filename}")
+    print(f"Open it in your browser: file:///{os.path.abspath(filename)}")
+    return G
+
+# %%
 # Process each sentence and extract SRL results
 
 sample_text = """ I passed a night of unmingled wretchedness. In the morning I went to
@@ -89,6 +144,7 @@ print("Cleaned Text:\n", cleaned_text)
 
 
 # %%
+# Extract SRL results for each sentence of sample text
 srl_results = []
 for sent in nlp(cleaned_text).sents:
     result = simple_srl(sent.text, nlp)
@@ -98,5 +154,24 @@ for sent in nlp(cleaned_text).sents:
 
 # Build and plot the knowledge graph with matplotlib
 build_and_plot_knowledge_graph_matplotlib(srl_results)
+G = build_and_plot_knowledge_graph_html(srl_results, filename="knowledge_graph.html")
+
+# %%
+# Load Art of War text
+with open("art_of_war_sun_tzu.txt", "r", encoding="utf-8") as file:
+    art_of_war_text = file.read()
+
+cleaned_art_of_war_text = remove_line_breaks(art_of_war_text)
+cleaned_art_of_war_text = remove_multiple_spaces(cleaned_art_of_war_text)
+
+# %%
+# Extract SRL results for each sentence of Art of War text
+srl_results_art_of_war = []
+for sent in nlp(cleaned_art_of_war_text).sents:
+    result = simple_srl(sent.text, nlp)
+    srl_results_art_of_war.append(result)
+
+# Build and plot the knowledge graph with matplotlib for Art of War text
+G = build_and_plot_knowledge_graph_html(srl_results_art_of_war, filename="art_of_war_knowledge_graph.html")
 
 # %%
