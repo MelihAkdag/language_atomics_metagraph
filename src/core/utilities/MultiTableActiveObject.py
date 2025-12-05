@@ -54,7 +54,7 @@ class MultiTableActiveObject:
 		
 		# If a property already exists, update it
 		if propid != None:
-			rec.Set( propid, 'value', value )
+			rec.set( propid, 'value', value )
 			return
 			
 		values = {
@@ -62,7 +62,7 @@ class MultiTableActiveObject:
 			'name': field,
 			'value': value }
 				
-		rec.Add( values )
+		rec.add( values )
 		return
 
 	def __get_meta_property_id(self, rec, field):

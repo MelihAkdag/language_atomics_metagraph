@@ -16,7 +16,7 @@ class MetaGraphDatabaseConnection(GraphDatabase.GraphDatabaseConnection):
 
 class Arc(GraphDatabase.Arc):
 	def __init__(self, rec, arc_id):
-		GraphDatabase.Arc.__init__(self, rec, arc_id, 'arc_id')
+		GraphDatabase.Arc.__init__(self, rec, arc_id)
 		return
 		
 	def is_property(self, field):
@@ -37,7 +37,10 @@ class MetaGraphDatabase(GraphDatabase.GraphDatabase):
 				MetaGraphDatabaseConnection(dbpath)
 				)
 		return
-	
+
+	def create_arc(self, rec, arc_id):
+		return Arc( rec, arc_id )
+
 		
 if __name__ == '__main__':
 	test = GraphDatabase( "graph.s3db", 14 )
