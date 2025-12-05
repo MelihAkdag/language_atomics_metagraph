@@ -6,7 +6,7 @@ from cor.metagraph.MetaGraphDatabase import MetaGraphDatabase
 from enum import Enum, Flag
 from typing import Any
 
-class ZoneStatus(Enum):
+class Atomic(Enum):
 	OF		= 1
 	HAS		= 2
 	IS_A	= 3
@@ -24,7 +24,8 @@ class Language:
 		return
 
 	def OF(self, a, A):
-		pass
+		self.graph.add_edge(a, A, Atomic.OF.value)
+		return
 
 	def HAS(self, A, a):
 		pass

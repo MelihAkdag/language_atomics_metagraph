@@ -183,7 +183,7 @@ class GraphDatabase:
 		v	= self.__get_vertex_model()
 		return Vertex( v, v.add(values) )
 
-	def is_Vertex(self, vid):
+	def is_vertex(self, vid):
 		if isinstance(vid, Vertex):
 			return (self.get_vertex_id(vid.id) != None)
 		if isinstance(vid, int):
