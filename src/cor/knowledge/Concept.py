@@ -13,6 +13,7 @@ class Concept(Vertex):
 		self.guid	= v['guid']
 		self.value	= v['value']
 		self.arcs	= []
+		self.anchor	= None
 		return
 
 	@staticmethod

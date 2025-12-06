@@ -74,7 +74,7 @@ class Vertex:
 		visited = set()
 		visited.add( self )
 
-		result	= self.visit( fn, ctxt, visitanchor, visited )
+		result	= self.visit( fn, ctxt, visitanchor, visited, depth )
 		
 		if result == ErrorCode.NOERROR or result == ErrorCode.ERROR_CONTINUE:
 			return self.traverse_bfs( fn, ctxt, depth-1, visitanchor, visited )
@@ -95,7 +95,7 @@ class Vertex:
 		visited = set()
 		visited.add( self )
 
-		result	= self.visit( fn, ctxt, visitanchor, visited )
+		result	= self.visit( fn, ctxt, visitanchor, visited, depth )
 		
 		if result == ErrorCode.NOERROR or result == ErrorCode.ERROR_CONTINUE:
 			return self.traverse_dfs( fn, ctxt, depth-1, visitanchor, visited )
@@ -122,10 +122,10 @@ class Vertex:
 
 			visited.add( a.end )
 
-			result	= a.end.visit( fn, ctxt, visitanchor, visited )
+			result	= a.end.visit( fn, ctxt, visitanchor, visited, maxlevel )
 			
 			if result == ErrorCode.NOERROR or result == ErrorCode.ERROR_CONTINUE:
-				result 	= a.end.traverse_dfs( fn, ctxt , maxlevel-1 )
+				result 	= a.end.traverse_dfs( fn, ctxt , maxlevel-1, visitanchor, visited )
 				if result == ErrorCode.NOERROR:
 					continue
 				elif result == ErrorCode.ERROR_CONTINUE:
@@ -157,7 +157,7 @@ class Vertex:
 
 			visited.add( a.end )
 
-			result	= a.end.visit( fn, ctxt, visitanchor, visited )
+			result	= a.end.visit( fn, ctxt, visitanchor, visited, maxlevel )
 			
 			if result == ErrorCode.NOERROR:
 				continue
@@ -184,9 +184,9 @@ class Vertex:
 
 		return result
 
-	def visit(self, fn, ctxt, visitanchor, visited):
+	def visit(self, fn, ctxt, visitanchor, visited, level):
 		visited.add( self )
-		result	= fn( self, ctxt )
+		result	= fn( self, ctxt, level )
 		
 		if result == ErrorCode.NOERROR or result == ErrorCode.ERROR_CONTINUE:
 			if visitanchor and self.anchor is not None:

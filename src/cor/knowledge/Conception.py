@@ -72,6 +72,7 @@ class Conception(MetaGraph):
 
 	def __str__(self):
 		return 
+	
 	@property
 	def name(self):
 		if self.root is None:
