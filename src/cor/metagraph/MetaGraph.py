@@ -220,16 +220,17 @@ class MetaGraph:
 		del self.vertices[vertex.name]
 		return
 
-	def join(self, a, b, weight=1.0, name="", anchor=None):
-		a = self.vertices.get(a.name, None)
+	def join(self, a, b, weight=1.0, name="", anchor=None, guid=None, aid=-1):
+		a = self.get_vertex(a)
 		if a is None:
 			return None
 
-		b = self.vertices.get(b.name, None)
+		b = self.get_vertex(b)
 		if b is None:
 			return None
 
-		arc = Arc(a, b, -1, weight, name, anchor)
+
+		arc = Arc(a, b, aid, weight, name, anchor, guid)
 		a.arcs.append( arc )
 		return arc
 
@@ -289,8 +290,14 @@ class MetaGraph:
 
 		return result
 
-	def get_vertex(self, name):
-		return self.vertices.get(name, None)
+	def get_vertex(self, id):
+		if isinstance(id, int):
+			for v in self.vertices.values():
+				if v.id == id:
+					return v
+			return None
+		
+		return self.vertices.get(id, None)
 	
 	def get_arc(self, start, end):
 		v = self.vertices.get(start, None)

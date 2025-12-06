@@ -163,7 +163,7 @@ class GraphDatabase:
 		if results == None:
 			return None
 			
-		return Arc( self.__get_arc_model(), results[0] )
+		return self.create_arc( self.__get_arc_model(), results[0] )
 								
 	def add_vertex(self, name, vert_type=0, guid=None, value=0):
 		if guid == None:
@@ -199,7 +199,7 @@ class GraphDatabase:
 		if isinstance(aid, Arc):
 			return aid
 		if isinstance(aid, int):
-			return Arc( self.__get_arc_model(), aid )
+			return self.create_arc( self.__get_arc_model(), aid )
 		elif isinstance(aid, uuid.UUID):
 			ids	= self.__get_arc_model().find_by('guid', str(aid).lower())
 		else:
@@ -207,7 +207,7 @@ class GraphDatabase:
 
 		if len(ids)==0:
 			return None
-		return Arc( self.__get_arc_model(), ids[0] )
+		return self.create_arc( self.__get_arc_model(), ids[0] )
 
 	def get_vertex(self, vid, type=None):
 		if isinstance(vid, Vertex):
@@ -291,8 +291,9 @@ class GraphDatabase:
 				
 		return (fromid, toid)
 
-	def get_arc_id(self, fromid, toid):
-		a	= self.__get_arc_model()
+	def get_arc_id(self, start, end):
+		fromid, toid	= self.resolve_vertex(start, end)
+
 		c	= self.__get_arc_model().conn.cursor()
 		c.execute('SELECT id FROM arcs WHERE graph_id={} AND start={} AND end={}'.format(self.graph_id, fromid, toid) )
 		row	= c.fetchone()
@@ -300,6 +301,19 @@ class GraphDatabase:
 			return None
 		
 		return row[0]
+
+	def get_arcs_for_vertex(self, start):
+		if isinstance(start, int):
+			fromid	= start
+		else:
+			fromid	= self.__get_safe_vertex_id(start)
+
+		c	= self.__get_arc_model().conn.cursor()
+		c.execute('SELECT id FROM arcs WHERE graph_id={} AND start={}'.format(self.graph_id, fromid) )
+		idList	= []
+		for row in c:
+			idList.append( row[0] )
+		return idList
 
 	def is_joined(self, start, end, directed=False):
 		fromid, toid	= self.resolve_vertex(start, end)
@@ -317,8 +331,9 @@ class GraphDatabase:
 		arcid	= self.get_arc_id(fromid, toid)
 		
 		if arcid != None:
-			arc = Arc( self.__get_arc_model(), arcid )
+			arc = self.create_arc( self.__get_arc_model(), arcid )
 			arc['weight'] = weight
+			arc['name'] = name
 			return arc
 
 		if guid == None:
@@ -341,7 +356,7 @@ class GraphDatabase:
 			'weight': weight,
 			'type': arc_type }
 		
-		return Arc( self.__get_arc_model(), self.__get_arc_model().add(values) )
+		return self.create_arc( self.__get_arc_model(), self.__get_arc_model().add(values) )
 
 									
 	def detach(self, start, end):
@@ -373,6 +388,9 @@ class GraphDatabase:
 
 	def __get_arc_model(self)->ActiveRecord:
 		return self.__getitem__('arcs')
-		
+
+	def create_arc(self, rec, arc_id):
+		return Arc( rec, arc_id )
+	
 if __name__ == '__main__':
 	test = GraphDatabase( "graph.s3db", 14 )

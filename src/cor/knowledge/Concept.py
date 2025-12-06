@@ -2,15 +2,22 @@
 # Filename: Concept.py
 # Description: Implementation of the Concept class
 
+from cor.metagraph.MetaGraph import Vertex
+
 import hashlib
 
-class Concept:
-	def __init__(self, name, node):
-		self.name		= name
-		self.node		= node
-		self._id		= None
+class Concept(Vertex):
+	def __init__(self, v=None):
+		self.id		= v.id
+		self.name	= v['name']
+		self.guid	= v['guid']
+		self.value	= v['value']
+		self.arcs	= []
 		return
 
+	@staticmethod
+	def clone(v):
+		return Concept(v)
 
 	def OF(self):
 		pass
@@ -41,15 +48,7 @@ class Concept:
 
 	def IS(self, other):
 		pass
-
-	@property
-	def id(self):
-		if self._id is None:
-			self._id	= Concept.to_id(self.name)
-
-		return self._id
-
-
+	
 	def __str__(self):
 		return self.name
 

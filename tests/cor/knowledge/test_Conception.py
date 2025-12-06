@@ -4,6 +4,7 @@
 
 from cor.knowledge.Conception import Conception
 from cor.knowledge.Concept import Concept
+from cor.knowledge.Knowledge import Knowledge
 
 import unittest
 
@@ -17,24 +18,16 @@ class ConceptCloudTestCase(unittest.TestCase):
 		return
 		
 	def setUp(self):
+		self.kb = Knowledge('graph')
 		return
 		
 	def tearDown(self):
 		return
 		
-	def test_upper(self):
-		self.assertEqual('foo'.upper(), 'FOO')
-
-	def test_isupper(self):
-		self.assertTrue('FOO'.isupper())
-		self.assertFalse('Foo'.isupper())
-
-	def test_split(self):
-		s = 'hello world'
-		self.assertEqual(s.split(), ['hello', 'world'])
-		# check that s.split fails when the separator is not a string
-		with self.assertRaises(TypeError):
-			s.split(2)
+	def test_load(self):
+		c = Conception()
+		c.load('Melih', self.kb, depth=2)
+		return
 
 if __name__ == '__main__':
     unittest.main()
