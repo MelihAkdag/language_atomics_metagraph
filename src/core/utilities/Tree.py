@@ -522,7 +522,7 @@ class Tree:
 		Arguments
 			fn -- Function to call back
 			ctxt -- Context argumen passed to the function
-			maxleve=1 -- Maximum depth to recurse into
+			maxlevel=1024 -- Maximum depth to recurse into
 		"""
 		return self._root.traverse( fn, ctxt, maxdepth )
 

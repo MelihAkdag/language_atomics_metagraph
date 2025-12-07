@@ -4,8 +4,15 @@
 
 from cor.knowledge.Conception import Conception
 from cor.knowledge.Concept import Concept
+from cor.knowledge.Knowledge import Knowledge
+from core.utilities.Errors import ErrorCode
 
 import unittest
+
+def print_node(node:Concept, ctxt, level:int):
+	level	 = 1024-level
+	print( f'{" " * level} Node: {node.name} (id={node.id})' )
+	return ErrorCode.ERROR_CONTINUE
 
 class ConceptCloudTestCase(unittest.TestCase):
 	@classmethod
@@ -17,24 +24,20 @@ class ConceptCloudTestCase(unittest.TestCase):
 		return
 		
 	def setUp(self):
+		self.kb = Knowledge('graph')
 		return
 		
 	def tearDown(self):
 		return
 		
-	def test_upper(self):
-		self.assertEqual('foo'.upper(), 'FOO')
+	def test_load(self):
+		c = Conception()
+		c.load('Melih', self.kb, depth=2)
 
-	def test_isupper(self):
-		self.assertTrue('FOO'.isupper())
-		self.assertFalse('Foo'.isupper())
+		print( f'vertices = {len(c.vertices)}' )
 
-	def test_split(self):
-		s = 'hello world'
-		self.assertEqual(s.split(), ['hello', 'world'])
-		# check that s.split fails when the separator is not a string
-		with self.assertRaises(TypeError):
-			s.split(2)
+		c.root.dfs( print_node, None, True )
+		return
 
 if __name__ == '__main__':
     unittest.main()

@@ -291,8 +291,9 @@ class GraphDatabase:
 				
 		return (fromid, toid)
 
-	def get_arc_id(self, fromid, toid):
-		a	= self.__get_arc_model()
+	def get_arc_id(self, start, end):
+		fromid, toid	= self.resolve_vertex(start, end)
+
 		c	= self.__get_arc_model().conn.cursor()
 		c.execute('SELECT id FROM arcs WHERE graph_id={} AND start={} AND end={}'.format(self.graph_id, fromid, toid) )
 		row	= c.fetchone()
@@ -300,6 +301,19 @@ class GraphDatabase:
 			return None
 		
 		return row[0]
+
+	def get_arcs_for_vertex(self, start):
+		if isinstance(start, int):
+			fromid	= start
+		else:
+			fromid	= self.__get_safe_vertex_id(start)
+
+		c	= self.__get_arc_model().conn.cursor()
+		c.execute('SELECT id FROM arcs WHERE graph_id={} AND start={}'.format(self.graph_id, fromid) )
+		idList	= []
+		for row in c:
+			idList.append( row[0] )
+		return idList
 
 	def is_joined(self, start, end, directed=False):
 		fromid, toid	= self.resolve_vertex(start, end)

@@ -3,7 +3,6 @@
 # Description: Implementation of the Knowledge class
 
 from cor.knowledge.Concept import Concept
-from cor.knowledge.Conception import Conception
 from cor.knowledge.Language import Language
 from cor.metagraph.MetaGraphDatabase import MetaGraphDatabase
 import os, shutil
@@ -53,7 +52,7 @@ class Knowledge:
 		if v is None:
 			v = self.graph.add_vertex(name, Concept.to_id(name))
 
-		return Concept(name, v)
+		return v
 		
 if __name__ == "__main__":
 	test = Knowledge()

@@ -6,9 +6,6 @@ from core.utilities.MultiTableActiveObject import MultiTableActiveObject
 from core.utilities.ActiveRecord import ActiveRecord
 import core.utilities.GraphDatabase as GraphDatabase
 
-import uuid
-from datetime import datetime
-
 class MetaGraphDatabaseConnection(GraphDatabase.GraphDatabaseConnection):
 	def __init__(self, dbpath):
 		GraphDatabase.GraphDatabaseConnection.__init__(self, dbpath)
@@ -28,7 +25,10 @@ class Arc(GraphDatabase.Arc):
 	def set_anchor(self, value):
 		return self.rec.set(self.id, 'anchor', value)
 			
-
+	@property
+	def anchor(self):
+		return self.get_anchor()
+	
 class MetaGraphDatabase(GraphDatabase.GraphDatabase):
 	def __init__(self, dbpath:str, graph_id=-1):
 		GraphDatabase.GraphDatabase.__init__(self,
@@ -43,4 +43,4 @@ class MetaGraphDatabase(GraphDatabase.GraphDatabase):
 
 		
 if __name__ == '__main__':
-	test = GraphDatabase( "graph.s3db", 14 )
+	test = MetaGraphDatabase( "graph.s3db", 14 )
