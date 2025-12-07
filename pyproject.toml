@@ -16,5 +16,6 @@ dependencies = [
     "scipy>=1.16.3",
     "setuptools>=80.9.0",
     "spacy>=3.8.11",
+    "tqdm>=4.67.1",
     "wheel>=0.45.1",
 ]

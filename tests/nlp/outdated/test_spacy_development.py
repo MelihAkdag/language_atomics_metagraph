@@ -242,6 +242,7 @@ print("Cleaned Text:\n", cleaned_text)
 # Define the function for Semantic Role Labeling (SRL) for primitives
 
 DENOTATION_VERBS = ["am", "are", "is", "was", "were", "be", "being", "been", "have been", "has been", "had been"]
+
 ATTRIBUTION_VERBS = ["have", "has", "had",
                      "own", "owns", "owned",
                      "possess", "possesses", "possessed", 
@@ -389,5 +390,31 @@ def build_and_plot_graph_primitives_html(name="graph", save_as_filename="knowled
     return G
 
 G = build_and_plot_graph_primitives_html(name="graph", save_as_filename="database_knowledge_graph.html")
+
+# %%
+
+# Load the full Frankenstein text from file
+with open('frankenstein.txt', 'r', encoding='utf-8') as f:
+     frankenstein_text = f.read() 
+
+cleaned_text = remove_line_breaks(frankenstein_text)
+cleaned_text = remove_multiple_spaces(cleaned_text)
+
+print("Cleaned Text:\n", cleaned_text[:500])  # Print first 500 characters
+
+# %%
+# Extract SRL results for each sentence of Frankenstein text using primitives SRL
+srl_results_primitives = []
+for sent in nlp(cleaned_text).sents:
+    result = primitives_srl(sent.text, nlp)
+    print(result)
+    print("-----")
+    srl_results_primitives.append(result)
+
+# Save the graph to database
+kb = save_to_database(srl_results_primitives, "graph")
+
+# Visualize the graph as html from database
+G = build_and_plot_graph_primitives_html(name="graph", save_as_filename="frankenstein_knowledge_graph.html")
 
 # %%

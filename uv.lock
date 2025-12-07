@@ -1122,6 +1122,7 @@ dependencies = [
     { name = "scipy" },
     { name = "setuptools" },
     { name = "spacy" },
+    { name = "tqdm" },
     { name = "wheel" },
 ]
 
@@ -1138,6 +1139,7 @@ requires-dist = [
     { name = "scipy", specifier = ">=1.16.3" },
     { name = "setuptools", specifier = ">=80.9.0" },
     { name = "spacy", specifier = ">=3.8.11" },
+    { name = "tqdm", specifier = ">=4.67.1" },
     { name = "wheel", specifier = ">=0.45.1" },
 ]
 
