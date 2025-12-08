@@ -1,101 +1,124 @@
 # language_atomics_metagraph
+
 Repository to explore atomics of language as knowledge primitives.
 
-## Development Setup
+## Quick Setup
 
-### 1. Install uv
-This project uses `uv` as package manager.
-If you haven't already, install [uv](https://docs.astral.sh/uv), preferably using it's ["Standalone installer"](https://docs.astral.sh/uv/getting-started/installation/#__tabbed_1_2) method: <br>
-..on Windows:
-```sh
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-..on MacOS and Linux:
-```sh
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-(see [docs.astral.sh/uv](https://docs.astral.sh/uv/getting-started/installation/) for all / alternative installation methods.)
+### 1. Install Python 3.10 or later
 
-Once installed, you can update `uv` to its latest version, anytime, by running:
-```sh
-uv self update
-```
+- [Download Python](https://www.python.org/downloads/) and install it (add to PATH)
 
-### 2. Install Python
-This project requires Python 3.10 or later. <br>
-If you don't already have a compatible version installed on your machine, the probably most comfortable way to install Python is through `uv`:
-```sh
-uv python install
-```
-This will install the latest stable version of Python into the uv Python directory, i.e. as a uv-managed version of Python.
+### 2. Clone the repository
 
-Alternatively, and if you want a standalone version of Python on your machine, you can install Python either via `winget`:
-```sh
-winget install --id Python.Python
-```
-or you can download and install Python from the [python.org](https://www.python.org/downloads/) website.
-
-### 3. Clone the repository
-Clone the mvx repository into your local development directory:
-```sh
+```bash
 git clone https://github.com/MelihAkdag/language_atomics_metagraph.git
-```
-Change into the project directory after cloning:
-```sh
 cd language_atomics_metagraph
 ```
 
-### 4. Install dependencies
-Run `uv sync` to create a virtual environment and install all project dependencies into it.
+### 3. Create and activate a virtual environment
 
-```sh
-uv sync
+**Windows (PowerShell):**
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-> **Note**: `uv` will create a new virtual environment called `.venv` in the project root directory when running
-> `uv sync` the first time. 
-
-### 5. (Optional) Activate the virtual environment
-When using `uv`, there is in almost all cases no longer a need to manually activate the virtual environment. <br>
-`uv` will find the `.venv` virtual environment in the working directory or any parent directory, and activate it on the fly whenever you run a command via `uv` inside your project folder structure:
-```sh
-uv run <command>
-```
-
-However, you still _can_ manually activate the virtual environment if needed.
-When developing in an IDE, for instance, this can in some cases be necessary depending on your IDE settings.
-To manually activate the virtual environment, run one of the "known" legacy commands: <br>
-..on Windows:
-```sh
-.venv\Scripts\activate.bat
-```
-..on Linux:
-```sh
+**macOS/Linux:**
+```bash
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### 6. Adding new libraries to the virtual environment
+### 4. Install dependencies
 
-To add new dependencies to your project, use the `uv add` command:
-
-```sh
-uv add <package-name>
+```bash
+pip install -r requirements.txt
 ```
 
-For example, to add `requests`:
-```sh
-uv add requests
+### 5. Download spaCy language model
+
+```bash
+python -m spacy download en_core_web_sm
 ```
 
-This will:
-- Install the package into your virtual environment
-- Add the package to your `pyproject.toml` file
-- Update the `uv.lock` file with the exact versions
+## Usage
 
+### Run Example Pipeline
 
-To add a package with a specific version constraint:
-```sh
-uv add "numpy>=1.24,<2.0"
+```bash
+python examples/nlp_usage_examples.py
 ```
 
-After adding packages, the changes are automatically synchronized. Other developers can then run `uv sync` to install the newly added dependencies.
+### Run Tests
+
+```bash
+python tests/nlp/test_text_cleaner.py
+python tests/nlp/test_nlp_pipeline.py
+```
+
+## Project Structure
+
+```
+language_atomics_metagraph/
+├── src/                          # Main source code
+│   ├── cor/                      # Concept of Reasoning (CoR)
+│   │   ├── knowledge/            # Knowledge representation primitives
+│   │   │   ├── Concept.py        # Fundamental concept structures
+│   │   │   ├── Conception.py     # Conception relationships
+│   │   │   ├── Knowledge.py      # Knowledge base management
+│   │   │   └── Language.py       # Language interface for knowledge
+│   │   └── metagraph/            # Metagraph structures
+│   │       ├── MetaGraph.py      # Graph representation
+│   │       └── MetaGraphDatabase.py  # Database integration
+│   │
+│   ├── core/                     # Core utilities and infrastructure
+│   │   └── utilities/            # Common utility modules
+│   │       ├── ActiveRecord.py   # Database active record pattern
+│   │       ├── GraphDatabase.py  # Graph database operations
+│   │       ├── InvertedIndex.py  # Search indexing
+│   │       ├── PropertySet.py    # Property management
+│   │       └── Tree.py           # Tree data structures
+│   │
+│   └── nlp/                      # Natural Language Processing
+│       ├── preprocessing/        # Text preprocessing
+│       │   └── text_cleaner.py   # Text cleaning utilities
+│       ├── extraction/           # Information extraction
+│       │   └── srl_extractor.py  # Semantic Role Labeling
+│       ├── visualization/        # Graph visualization
+│       │   └── graph_builder.py  # Knowledge graph visualization
+│       └── pipeline/             # End-to-end pipelines
+│           └── knowledge_pipeline.py  # Complete extraction pipeline
+│
+├── data/                         # Data files (not tracked in git)
+│   ├── raw/                      # Original datasets (e.g., frankenstein.txt)
+│   ├── processed/                # Cleaned/transformed data
+│   ├── databases/                # Generated SQLite databases (.s3db)
+│   └── visualizations/           # HTML graph visualizations
+│
+├── examples/                     # Example usage scripts
+│   └── nlp_usage_examples.py     # NLP pipeline demonstrations
+│
+└── tests/                        # Unit and integration tests
+    ├── cor/                      # Tests for concept reasoning modules
+    └── nlp/                      # Tests for NLP modules
+```
+
+### Key Modules
+
+- **cor/** (Concept of Reasoning): Core knowledge representation using concepts, conceptions, and language primitives
+- **core/**: Infrastructure utilities for database operations, indexing, and data structures
+- **nlp/**: Natural language processing pipeline for extracting knowledge from text
+- **data/**: All input/output data organized by type (raw → processed → databases → visualizations)
+- **examples/**: Ready-to-run scripts demonstrating module usage
+- **tests/**: Comprehensive test suite for all modules
+
+## Adding New Dependencies
+
+```bash
+pip install <package-name>
+pip freeze > requirements.txt
+```
+
+---
+
+For more details, see the comments in each folder and script.
