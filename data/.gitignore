@@ -1,0 +1,11 @@
+# Ignore database files (they can be large)
+*.s3db
+*.db
+*.sqlite
+*.sqlite3
+
+# Ignore generated visualizations
+*.html
+
+# Keep directory structure
+!.gitkeep
