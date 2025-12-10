@@ -46,14 +46,16 @@ class GraphBuilder:
     @staticmethod
     def save_as_html(graph: nx.DiGraph, filename: str, 
                      height: str = "1000px", 
-                     width: str = "100%") -> str:
-        """Save graph as interactive HTML file.
+                     width: str = "100%",
+                     physics: bool = True) -> str:
+        """Save graph as interactive HTML file with selection highlighting.
         
         Args:
             graph: NetworkX graph to visualize
             filename: Output HTML filename
             height: Height of the visualization
             width: Width of the visualization
+            physics: Whether to enable physics simulation
             
         Returns:
             Absolute path to the saved HTML file
@@ -65,25 +67,36 @@ class GraphBuilder:
             font_color="white",
             notebook=True,
             directed=True,
-            cdn_resources='in_line'
+            cdn_resources='in_line',
+            neighborhood_highlight=True
         )
         
         # Configure physics for better layout
         pyvis_nt.set_options("""
         var options = {
           "physics": {
-            "enabled": true,
+            "enabled": """ + ("true" if physics else "false") + """,
             "stabilization": {
               "iterations": 200
             }
+          },
+          "interaction": {
+            "hover": true,
+            "tooltipDelay": 200,
+            "hideEdgesOnDrag": false,
+            "navigationButtons": true,
+            "keyboard": true
           }
         }
         """)
+
         
         pyvis_nt.from_nx(graph)
         
-        # Write with UTF-8 encoding
+        # Generate HTML with selection highlighting
         html = pyvis_nt.generate_html()
+        
+        # Write with UTF-8 encoding
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(html)
         

@@ -37,25 +37,38 @@ class SRLExtractor:
             sentence: Input sentence to analyze
             
         Returns:
-            Dictionary containing subjects, verbs, objects, and indirect_objects
+            Dictionary containing subjects, verbs, objects, anchors, and indirect_objects
         """
         doc = self.nlp(sentence)
         subjects = []
         verbs = []
         objects = []
+        anchors = []
         indirect_objects = []
         
         for token in doc:
+            # Extract subjects
             if "subj" in token.dep_:
                 subjects.append(token.text)
             
+            # Extract verbs and handle HAS relationships specially
             if "VERB" in token.pos_:
                 verb_surrogate = self._get_verb_surrogate(token.lemma_)
                 verbs.append(verb_surrogate)
+                
+                # For HAS verbs, extract anchors and objects
+                if verb_surrogate == "HAS":
+                    anchor, obj = self._extract_has_components(token)
+                    if anchor:
+                        anchors.append(anchor)
+                    if obj:
+                        objects.append(obj)
             
-            if "obj" in token.dep_:
+            # Extract objects (for non-HAS verbs)
+            if "obj" in token.dep_ and "HAS" not in verbs:
                 objects.append(token.text)
             
+            # Extract indirect objects
             if "dative" in token.dep_:
                 indirect_objects.append(token.text)
         
@@ -63,8 +76,67 @@ class SRLExtractor:
             'subjects': subjects,
             'verbs': verbs,
             'objects': objects,
+            'anchors': anchors,
             'indirect_objects': indirect_objects
         }
+    
+    def _extract_has_components(self, verb_token) -> tuple:
+        """Extract anchor and object from HAS relationships.
+        
+        For patterns like:
+        - "has a home" → anchor="home", object="home" (or more specific if available)
+        - "has address at X" → anchor="address", object="X"
+        - "has blue eyes" → anchor="eyes", object="blue"
+        
+        Args:
+            verb_token: The HAS verb token from spaCy
+            
+        Returns:
+            Tuple of (anchor, object)
+        """
+        anchor = None
+        obj = None
+        
+        for child in verb_token.children:
+            # Direct object is usually the anchor (attribute name)
+            if child.dep_ == "dobj":
+                anchor = child.text
+                
+                # Check for compound nouns (e.g., "home address")
+                compounds = [c.text for c in child.children if c.dep_ == "compound"]
+                if compounds:
+                    anchor = " ".join(compounds + [child.text])
+                
+                # Look for adjective modifiers as the actual value
+                for grandchild in child.children:
+                    if grandchild.dep_ == "amod":  # Adjectival modifier
+                        obj = grandchild.text
+                    elif grandchild.dep_ == "prep":  # Prepositional phrase
+                        # e.g., "address at 23 Dalcant"
+                        for prep_child in grandchild.children:
+                            if prep_child.dep_ == "pobj":
+                                obj = prep_child.text
+                                # Get full prepositional object with compounds
+                                compounds = [c.text for c in prep_child.children 
+                                           if c.dep_ in ["compound", "nummod"]]
+                                if compounds:
+                                    obj = " ".join(compounds + [prep_child.text])
+                
+                # If no specific object found, use a compound or the anchor itself
+                if not obj:
+                    # Check if there's a determiner + noun pattern
+                    det_children = [c for c in child.children if c.dep_ == "det"]
+                    if det_children:
+                        obj = f"{det_children[0].text} {child.text}"
+                    else:
+                        obj = child.text
+            
+            # Handle attribute clauses (e.g., "has been a teacher")
+            elif child.dep_ == "attr":
+                anchor = "attribute"
+                obj = child.text
+        
+        return anchor, obj
     
     def _get_verb_surrogate(self, lemma: str) -> str:
         """Map verb lemma to primitive surrogate.

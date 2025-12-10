@@ -88,33 +88,41 @@ class KnowledgePipeline:
             subjects = result['subjects']
             verbs = result['verbs']
             objects = result['objects']
+            anchors = result.get('anchors', [])
             indirect_objects = result['indirect_objects']
             
             for subject in subjects:
-                for verb in verbs:
-                    for obj in objects:
+                for i, verb in enumerate(verbs):
+                    # Direct objects
+                    for j, obj in enumerate(objects):
                         if verb == "IS":
                             say.IS(subject, obj)
                         elif verb == "HAS":
-                            say.HAS(subject, obj, f"{subject}.{obj}")
+                            # Use corresponding anchor if available
+                            anchor = anchors[j] if j < len(anchors) else "property"
+                            say.HAS(subject, anchor, obj)
                     
+                    # Indirect objects
                     for ind_obj in indirect_objects:
                         if verb == "IS":
                             say.IS(subject, ind_obj)
                         elif verb == "HAS":
-                            say.HAS(subject, ind_obj, f"{subject}.{ind_obj}")
+                            # For indirect objects, use generic anchor
+                            anchor = "property"
+                            say.HAS(subject, anchor, ind_obj)
         
         return kb
     
-    def visualize(self, db_name: str, output_file: str) -> str:
+    def visualize(self, db_name: str, output_file: str, physics: bool = True) -> str:
         """Visualize knowledge graph from database.
         
         Args:
             db_name: Database name/path
             output_file: Output HTML filename
+            physics: Whether to enable physics simulation
             
         Returns:
             Absolute path to saved visualization
         """
         graph = GraphBuilder.build_from_database(db_name)
-        return GraphBuilder.save_as_html(graph, output_file)
+        return GraphBuilder.save_as_html(graph=graph, filename=output_file, physics=physics)
