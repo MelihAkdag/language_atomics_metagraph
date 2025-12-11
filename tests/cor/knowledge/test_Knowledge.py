@@ -79,5 +79,12 @@ class KnowledgeTestCase(unittest.TestCase):
 		self.assertEqual(sreekant['name'], 'Sreekant')
 		self.assertEqual(melih['name'], 'Melih')
 
+	def test_load(self):
+		c = self.kb.slice('Melih', depth=2)
+
+		print( f'vertices = {len(c.vertices)}' )
+		print( c )
+		return
+
 if __name__ == '__main__':
     unittest.main()

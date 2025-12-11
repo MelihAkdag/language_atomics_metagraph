@@ -26,6 +26,7 @@ class Vertex:
 		self.name		= name
 		self.weight		= weight
 		self.arcs		= []
+		self.anchor		= None
 		return
 
 	def connected(self, b):
@@ -255,35 +256,35 @@ class MetaGraph:
 		self.vertices[vertex.name] = vertex
 		return True
 
-	def remove(self, vertex):		
+	def remove(self, vertex):
 		for v in self.vertices.values():
-			if v == vertex:
+			if v.id == vertex.id:
 				continue
 			
-			for a in v.arcs:
-				if a.end == vertex:
+			for a in list(v.arcs):
+				if (a.end.id == vertex.id) or (a.start.id == vertex.id):
 					v.arcs.remove( a )
-					break
 	
 		del self.vertices[vertex.name]
 		return
 
 	def filter(self, matches:set):
+		remove_list = []
 		for v in self.vertices.values():
 			if v.id not in matches:
-				self.remove( v )
+				remove_list.append( v )
+		
+		for v in remove_list:
+			self.remove( v )
 		return self
 
 	def clone(self):
 		return self.copy_to( MetaGraph() )
 
-	def copy_to(self, copy):
-		copy = MetaGraph()
-		
+	def copy_to(self, copy):		
 		# Clone vertices
 		for v in self.vertices.values():
-			newv = Vertex( v.id, v.weight, v.name, v.guid )
-			copy.add( newv )
+			copy.add( self.new_vertex(v.id, v.weight, v.name, v.guid) )
 		
 		# Clone arcs
 		for v in self.vertices.values():
@@ -292,6 +293,9 @@ class MetaGraph:
 		
 		return copy
 
+	def new_vertex(self, id=-1, weight=1.0, name="", guid=None):
+		return Vertex(id, weight, name, guid)
+	
 	def to_set(self):
 		result = set()
 		for v in self.vertices.values():

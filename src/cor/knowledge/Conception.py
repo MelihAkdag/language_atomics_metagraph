@@ -14,7 +14,7 @@ class PrintCtxt:
 	
 
 class Conception(MetaGraph):
-	def __init__(self, name:None, kb=None, depth=3):
+	def __init__(self, name=None, kb=None, depth=3):
 		MetaGraph.__init__(self)
 		self.root	= None
 
@@ -24,8 +24,45 @@ class Conception(MetaGraph):
 				
 		return	
 
+	def remove(self, vertex):
+		if self.root is not None and vertex.id == self.root.id:
+			MetaGraph.remove(self, vertex)
+			self.root = list(self.vertices.values())[0] if len(self.vertices) > 0 else None
+		else:
+			MetaGraph.remove(self, vertex)
+
+	def new_vertex(self, id=-1, weight=1.0, name="", guid=None):
+		return Concept(name, id, weight,  guid)
+
+	def load(self, info):
+		for k in info.keys():
+			c 	= Concept(k)
+			if self.root is None:
+				self.root = c
+
+			self.add( c )
+
+	
+		for k, v in info.items():
+			for e in v:
+				self.join( k, e )
+		return self
+	
 	def clone(self):
-		return self.copy_to( Conception() )
+		copy = Conception()
+		v	= self.root
+		if v is not None:
+			copy.root = self.new_vertex(v.id, v.weight, v.name, v.guid)
+			copy.add( copy.root )
+		
+		self.copy_to( copy )
+	
+		if v is not None:
+			for a in v.arcs:
+				copy.join( a.start.name, a.end.name, a.weight, a.name, a.anchor, a.guid, a.id )
+
+		return copy		
+
 
 	def union(self, rhs:MetaGraph):
 		return self.clone().union_update( rhs )
@@ -59,6 +96,9 @@ class Conception(MetaGraph):
 		rhsset	= rhs.to_set()
 		lhsset	= self.to_set()
 		result	= lhsset.symmetric_difference( rhsset )
+
+		# Need top copy to incorporate all vertices and arcs from 'rhset'
+		rhs.copy_to( self )
 		return self.filter(result)
 
 

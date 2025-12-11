@@ -7,18 +7,16 @@ from cor.metagraph.MetaGraph import Vertex
 import hashlib
 
 class Concept(Vertex):
-	def __init__(self, v=None):
-		self.id		= v.id
-		self.name	= v['name']
-		self.guid	= v['guid']
-		self.value	= v['value']
-		self.arcs	= []
-		self.anchor	= None
+	def __init__(self, name="", id=-1, weight=1.0, guid=None):
+		if id == -1 and name != "":
+			id = Concept.to_id(name)
+			
+		Vertex.__init__(self, id, weight, name, guid)
 		return
 
 	@staticmethod
 	def clone(v):
-		return Concept(v)
+		return Concept(v.id, v.weight, v.name, v.guid)
 
 	def OF(self):
 		pass
