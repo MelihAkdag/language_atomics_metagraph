@@ -5,14 +5,9 @@
 from cor.knowledge.Conception import Conception
 from cor.knowledge.Concept import Concept
 from cor.knowledge.Knowledge import Knowledge
-from core.utilities.Errors import ErrorCode
 
 import unittest
 
-def print_node(node:Concept, ctxt, level:int):
-	level	 = 1024-level
-	print( f'{" " * level} Node: {node.name} (id={node.id})' )
-	return ErrorCode.ERROR_CONTINUE
 
 class ConceptCloudTestCase(unittest.TestCase):
 	@classmethod
@@ -31,12 +26,10 @@ class ConceptCloudTestCase(unittest.TestCase):
 		return
 		
 	def test_load(self):
-		c = Conception()
-		c.load('Melih', self.kb, depth=2)
+		c = self.kb.slice('Melih', depth=2)
 
 		print( f'vertices = {len(c.vertices)}' )
-
-		c.root.dfs( print_node, None, True )
+		print( c )
 		return
 
 if __name__ == '__main__':

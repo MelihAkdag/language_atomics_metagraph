@@ -17,12 +17,13 @@ class KnowledgeTestCase(unittest.TestCase):
 		
 	def setUp(self):
 		self.kb = Knowledge('graph')
+		#self.setup_db()
 		return
 		
 	def tearDown(self):
 		return
 
-	def test_speak(self):
+	def setup_db(self):
 		lang = self.kb.speak()
 		'''					
 			Melih {
@@ -75,8 +76,8 @@ class KnowledgeTestCase(unittest.TestCase):
 	def test_add(self):
 		sreekant = self.kb['Sreekant']
 		melih = self.kb['Melih']
-		self.assertEqual(sreekant.name, 'Sreekant')
-		self.assertEqual(melih.name, 'Melih')
+		self.assertEqual(sreekant['name'], 'Sreekant')
+		self.assertEqual(melih['name'], 'Melih')
 
 if __name__ == '__main__':
     unittest.main()

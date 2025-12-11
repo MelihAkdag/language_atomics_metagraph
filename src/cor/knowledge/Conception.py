@@ -2,6 +2,7 @@
 # Filename: Conception.py
 # Description: Implementation of the Conception class
 
+from cor.knowledge.Concept import Concept
 from cor.metagraph.MetaGraph import MetaGraph, Vertex, Arc
 from core.utilities.Errors import ErrorCode
 
@@ -13,23 +14,53 @@ class PrintCtxt:
 	
 
 class Conception(MetaGraph):
-	def __init__(self):
+	def __init__(self, name:None, kb=None, depth=3):
 		MetaGraph.__init__(self)
 		self.root	= None
+
+		# Load the conception from knowledge base
+		if name is not None and kb is not None:
+			kb.load( self, name, depth )
+				
 		return	
 
+	def clone(self):
+		return self.copy_to( Conception() )
 
-	def union(self, other_knowledge):
-		pass
+	def union(self, rhs:MetaGraph):
+		return self.clone().union_update( rhs )
 
-	def intersection(self, other_knowledge):
-		pass
+	def intersection(self, rhs:MetaGraph):
+		return self.clone().intersection_update( rhs )
 
-	def difference(self, other_knowledge):
-		pass
+	def difference(self, rhs:MetaGraph):
+		return self.clone().difference_update( rhs )
 
-	def symmetric_difference(self, other_knowledge):
-		pass
+	def symmetric_difference(self, rhs:MetaGraph):
+		return self.clone().symmetric_difference_update( rhs )
+	
+	def union_update(self, rhs:MetaGraph):
+		rhs.copy_to( self )
+		return self
+
+	def intersection_update(self, rhs:MetaGraph):
+		rhsset	= rhs.to_set()
+		lhsset	= self.to_set()
+		result	= lhsset.intersection( rhsset )
+		return self.filter(result)
+
+	def difference_update(self, rhs):
+		rhsset	= rhs.to_set()
+		lhsset	= self.to_set()
+		result	= lhsset.difference( rhsset )
+		return self.filter(result)
+
+	def symmetric_difference_update(self, rhs):
+		rhsset	= rhs.to_set()
+		lhsset	= self.to_set()
+		result	= lhsset.symmetric_difference( rhsset )
+		return self.filter(result)
+
 
 	@property
 	def name(self):

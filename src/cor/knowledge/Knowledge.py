@@ -39,7 +39,7 @@ class Knowledge:
 
 	def slice(self, name:str, depth:int):
 		c = Conception()
-		self.__load(c, name, depth)
+		self.load(c, name, depth)
 		return c
 
 
@@ -51,7 +51,7 @@ class Knowledge:
 		return v
 
 
-	def __load(self, concept, name:str, depth=3):
+	def load(self, concept, name:str, depth=3):
 		# find root concept
 		v = self[name]
 		if v is None:
