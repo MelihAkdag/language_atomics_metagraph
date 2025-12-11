@@ -2,9 +2,11 @@
 # Filename: Knowledge.py
 # Description: Implementation of the Knowledge class
 
+from cor.knowledge.Conception import Conception
 from cor.knowledge.Concept import Concept
 from cor.knowledge.Language import Language
 from cor.metagraph.MetaGraphDatabase import MetaGraphDatabase
+
 import os, shutil
 
 class Knowledge:
@@ -35,17 +37,11 @@ class Knowledge:
 
 		return self.language
 
-	def union(self, other_knowledge):
-		pass
+	def slice(self, name:str, depth:int):
+		c = Conception()
+		self.__load(c, name, depth)
+		return c
 
-	def intersection(self, other_knowledge):
-		pass
-
-	def difference(self, other_knowledge):
-		pass
-
-	def symmetric_difference(self, other_knowledge):
-		pass
 
 	def __getitem__(self, name):
 		v = self.graph.get_vertex_by_name(name, auto_add=False)
@@ -53,7 +49,65 @@ class Knowledge:
 			v = self.graph.add_vertex(name, Concept.to_id(name))
 
 		return v
+
+
+	def __load(self, concept, name:str, depth=3):
+		# find root concept
+		v = self[name]
+		if v is None:
+			raise ValueError(f'Concept {name} not found in knowledge base.')
+
+		links 			= {}
+		concept.root 	= self.__traverse_subgraph( concept, v, depth, links)
+
+		self.__link_nodes(concept, links)
+		return
+
+	def __link_nodes(self, concept, links):
+		for start, arcs in links.items():
+			for aid in arcs:
+				a 		= self.graph.get_arc(aid)
+				
+				concept.join(
+					start, 
+					a['end'], 
+					a['weight'], 
+					a['name'], 
+					a.anchor,
+					a.id)
+		return
+
+	def __traverse_subgraph(self, concept, v, depth:int, links):
+		c = Concept.clone(v)
+		if depth < 0:
+			return c
+
+		# If the concept already exists in the conception, return it
+		if concept.add(c) is False:
+			return c
 		
+		# Clone the arcs
+		arcs 		= self.graph.get_arcs_for_vertex( v.id )
+		links[v.id] = arcs
+
+		for aid in arcs:
+			a 		= self.graph.get_arc(aid)
+			anchor 	= self.__create_node(concept, a['anchor'], depth - 1, links)
+			start  	= self.__create_node(concept, a['start'], depth - 1, links)
+			end    	= self.__create_node(concept, a['end'], depth - 1, links)
+
+		return c
+
+	def __create_node(self, concept, v, depth:int, links):
+			if v == 0:
+				return None
+			
+			return self.__traverse_subgraph(
+				concept,
+				self.graph.get_vertex(v), 
+				depth,
+				links )
+
 if __name__ == "__main__":
 	test = Knowledge()
 

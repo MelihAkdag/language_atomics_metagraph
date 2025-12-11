@@ -3,8 +3,14 @@
 # Description: Implementation of the Conception class
 
 from cor.metagraph.MetaGraph import MetaGraph, Vertex, Arc
-from cor.knowledge.Knowledge import Knowledge
-from cor.knowledge.Concept import Concept
+from core.utilities.Errors import ErrorCode
+
+class PrintCtxt:
+	def __init__(self):
+		self.lines	= []
+		self.indent	= 0
+		return
+	
 
 class Conception(MetaGraph):
 	def __init__(self):
@@ -12,67 +18,19 @@ class Conception(MetaGraph):
 		self.root	= None
 		return	
 
-	def load(self, name:str, kb:Knowledge, depth=3):
-		# find root concept
-		v = kb[name]
-		if v is None:
-			raise ValueError(f'Concept {name} not found in knowledge base.')
 
-		links 		= {}
-		self.root 	= self.__traverse_subgraph(v, kb, depth, links)
+	def union(self, other_knowledge):
+		pass
 
-		self.__link_nodes(links, kb)
-		return
+	def intersection(self, other_knowledge):
+		pass
 
-	def __link_nodes(self, links, kb:Knowledge):
-		for start, arcs in links.items():
-			for aid in arcs:
-				a 		= kb.graph.get_arc(aid)
-				
-				self.join(
-					start, 
-					a['end'], 
-					a['weight'], 
-					a['name'], 
-					a.anchor,
-					a.id)
-		return
-	
-	def __traverse_subgraph(self, v, kb:Knowledge, depth:int, links):
-		c = Concept.clone(v)
-		if depth < 0:
-			return c
+	def difference(self, other_knowledge):
+		pass
 
-		# If the concept already exists in the conception, return it
-		if self.add(c) is False:
-			return c
-		
-		# Clone the arcs
-		arcs 		= kb.graph.get_arcs_for_vertex( v.id )
-		links[v.id] = arcs
+	def symmetric_difference(self, other_knowledge):
+		pass
 
-		for aid in arcs:
-			a 		= kb.graph.get_arc(aid)
-			anchor 	= self.__create_node(a['anchor'], kb, depth - 1, links)
-			start  	= self.__create_node(a['start'], kb, depth - 1, links)
-			end    	= self.__create_node(a['end'], kb, depth - 1, links)
-
-		return c
-
-	def __create_node(self, v, kb:Knowledge, depth:int, links):
-			if v == 0:
-				return None
-			
-			return self.__traverse_subgraph(
-				kb.graph.get_vertex(v), 
-				kb, 
-				depth,
-				links)
-				
-
-	def __str__(self):
-		return 
-	
 	@property
 	def name(self):
 		if self.root is None:
@@ -84,6 +42,35 @@ class Conception(MetaGraph):
 		if self.root is None:
 			return None
 		return self.root.weight
+				
+
+	def __str__(self):
+		ctxt	= PrintCtxt()
+		self.root.dfs( 
+				Conception.__print_node, 
+				ctxt, 
+				True,
+				1024, 
+				Conception.__print_preprocess,
+				Conception.__print_postprocess )
+		
+		return '\n'.join(ctxt.lines)
+	
+	@staticmethod
+	def __print_preprocess(node:Concept, ctxt:PrintCtxt, level:int):
+		ctxt.indent	+= 1
+		return ErrorCode.ERROR_CONTINUE
+
+	@staticmethod
+	def __print_postprocess(node:Concept, ctxt:PrintCtxt, level:int):
+		ctxt.indent	-= 1
+		return ErrorCode.ERROR_CONTINUE
+
+	@staticmethod
+	def __print_node(node:Concept, ctxt:PrintCtxt, level:int):
+		ctxt.lines.append( f'{" " * ctxt.indent} {ctxt.indent}-Node: {node.name} (id={node.id})' )
+		return ErrorCode.ERROR_CONTINUE
+
 
 if __name__ == "__main__":
 	test = Conception()

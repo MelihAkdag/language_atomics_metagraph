@@ -60,13 +60,15 @@ class Vertex:
 
 		return result
 
-	def bfs( self, fn, ctxt, visitanchor=False, depth=1024 ):
+	def bfs( self, fn, ctxt, visitanchor=False, depth=1024, preproc=None, postproc=None ):
 		""" Helper function to iterate through vertices of a graph and invoke a callback
 		Arguments
 			fn -- Function to call back
 			ctxt -- Context argument passed to the function
 			visitanchor -- Whether to visit anchor nodes
 			depth=1024 -- Maximum depth to recurse into
+			preproc -- Preprocessor callback
+			postproc -- Postprocessor callback
 		"""
 		if depth <= 0:
 			return ErrorCode.NOERROR
@@ -74,20 +76,22 @@ class Vertex:
 		visited = set()
 		visited.add( self )
 
-		result	= self.visit( fn, ctxt, visitanchor, visited, depth )
+		result	= self.visit( fn, ctxt, visitanchor, visited, depth, preproc, postproc, False )
 		
 		if result == ErrorCode.NOERROR or result == ErrorCode.ERROR_CONTINUE:
 			return self.traverse_bfs( fn, ctxt, depth-1, visitanchor, visited )
 		
 		return result
 
-	def dfs( self, fn, ctxt, visitanchor=False, depth=1024 ):
+	def dfs( self, fn, ctxt, visitanchor=False, depth=1024, preproc=None, postproc=None ):
 		""" function to iterate through vertices of a graph and invoke a callback
 		Arguments
 			fn -- Function to call back
 			ctxt -- Context argument passed to the function
 			visitanchor -- Whether to visit anchor nodes
 			depth=1024 -- Maximum depth to recurse into
+			preproc -- Preprocessor callback
+			postproc -- Postprocessor callback
 		"""
 		if depth <= 0:
 			return ErrorCode.NOERROR
@@ -95,20 +99,22 @@ class Vertex:
 		visited = set()
 		visited.add( self )
 
-		result	= self.visit( fn, ctxt, visitanchor, visited, depth )
+		result	= self.visit( fn, ctxt, visitanchor, visited, depth, preproc, postproc, True )
 		
 		if result == ErrorCode.NOERROR or result == ErrorCode.ERROR_CONTINUE:
-			return self.traverse_dfs( fn, ctxt, depth-1, visitanchor, visited )
+			return self.traverse_dfs( fn, ctxt, depth-1, visitanchor, visited, preproc, postproc )
 		
 		return result
 	
 
-	def traverse_dfs( self, fn, ctxt, maxlevel, visitanchor, visited ):
+	def traverse_dfs( self, fn, ctxt, maxlevel, visitanchor, visited, preproc, postproc ):
 		""" Helper function to iterate through vertices of a graph and invoke a callback
 		Arguments
 			fn -- Function to call back
 			ctxt -- Context argument passed to the function
 			maxlevel=1024 -- Maximum depth to recurse into
+			preproc -- Preprocessor callback
+			postproc -- Postprocessor callback
 		"""
 
 		result = ErrorCode.NOERROR
@@ -122,28 +128,37 @@ class Vertex:
 
 			visited.add( a.end )
 
-			result	= a.end.visit( fn, ctxt, visitanchor, visited, maxlevel )
-			
-			if result == ErrorCode.NOERROR or result == ErrorCode.ERROR_CONTINUE:
-				result 	= a.end.traverse_dfs( fn, ctxt , maxlevel-1, visitanchor, visited )
-				if result == ErrorCode.NOERROR:
-					continue
-				elif result == ErrorCode.ERROR_CONTINUE:
-					continue
-				else:
+			if preproc is not None:
+				result	= preproc( a.end, ctxt, maxlevel )
+				
+				if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
 					return result
 				
-			else:
+			result	= a.end.visit( fn, ctxt, visitanchor, visited, maxlevel, preproc, postproc, True )
+
+			if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
 				return result
+			
+			result 	= a.end.traverse_dfs( fn, ctxt , maxlevel-1, visitanchor, visited, preproc, postproc )
+			if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
+				return result
+
+			if postproc is not None:
+				result	= postproc( a.end, ctxt, maxlevel )
+				
+				if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
+					return result
 
 		return result
 
-	def traverse_bfs( self, fn, ctxt, maxlevel, visitanchor, visited ):
+	def traverse_bfs( self, fn, ctxt, maxlevel, visitanchor, visited, preproc, postproc ):
 		""" Helper function to iterate through vertices of a graph and invoke a callback
 		Arguments
 			fn -- Function to call back
 			ctxt -- Context argument passed to the function
 			maxlevel=1024 -- Maximum depth to recurse into
+			preproc -- Preprocessor callback
+			postproc -- Postprocessor callback
 		"""
 
 		result = ErrorCode.NOERROR
@@ -157,14 +172,23 @@ class Vertex:
 
 			visited.add( a.end )
 
-			result	= a.end.visit( fn, ctxt, visitanchor, visited, maxlevel )
+			if preproc is not None:
+				result	= preproc( a.end, ctxt, maxlevel )
+				
+				if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
+					return result
+				
+			result	= a.end.visit( fn, ctxt, visitanchor, visited, maxlevel, preproc, postproc, False )
+
 			
-			if result == ErrorCode.NOERROR:
-				continue
-			elif result == ErrorCode.ERROR_CONTINUE:
-				continue
-			else:
+			if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
 				return result
+
+			if postproc is not None:
+				result	= postproc( a.end, ctxt, maxlevel )
+				
+				if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
+					return result
 
 		if maxlevel <= 1:
 			return result
@@ -174,26 +198,46 @@ class Vertex:
 			if a.end in visited:
 				continue
 
-			result 	= a.end.traverse_bfs( fn, ctxt , maxlevel-1 )
-			if result == ErrorCode.NOERROR:
-				continue
-			elif result == ErrorCode.ERROR_CONTINUE:
-				continue
-			else:
+			result 	= a.end.traverse_bfs( fn, ctxt , maxlevel-1, visitanchor, visited, preproc, postproc )
+			if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
 				return result
-
+			
 		return result
 
-	def visit(self, fn, ctxt, visitanchor, visited, level):
+	def visit(self, fn, ctxt, visitanchor, visited, maxlevel, preproc, postproc, isdfs=True ):
 		visited.add( self )
-		result	= fn( self, ctxt, level )
+		result	= fn( self, ctxt, maxlevel )
 		
-		if result == ErrorCode.NOERROR or result == ErrorCode.ERROR_CONTINUE:
-			if visitanchor and self.anchor is not None:
-				visited.add( self.anchor )
-				return self.anchor( fn, ctxt, visitanchor )
+		if visitanchor == False or self.anchor is None:
+			return result
+		
+		if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
+			return result
+
+		# Visit the anchor node		
+		visited.add( self.anchor )
+
+		if preproc is not None:
+			result	= preproc( self.anchor, ctxt, maxlevel )
 			
-		return result		
+			if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
+				return result
+
+		result	= fn( self.anchor, ctxt, maxlevel )
+		if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
+			return result
+
+		if postproc is not None:
+			result	= postproc( self.anchor, ctxt, maxlevel )
+			
+			if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
+				return result
+
+		if isdfs:
+			return self.anchor.traverse_dfs( fn, ctxt , maxlevel, visitanchor, visited, preproc, postproc )
+		else:
+			return self.anchor.traverse_bfs( fn, ctxt , maxlevel, visitanchor, visited, preproc, postproc )
+			
 	
 class MetaGraph:
 	def __init__(self):
