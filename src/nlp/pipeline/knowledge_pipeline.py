@@ -3,6 +3,7 @@
 from typing import List, Dict, Any, Optional
 from tqdm import tqdm
 import spacy
+from spacy.lang.en.stop_words import STOP_WORDS
 
 from cor.knowledge.Knowledge import Knowledge
 from nlp.preprocessing.text_cleaner import TextCleaner
@@ -92,37 +93,95 @@ class KnowledgePipeline:
             indirect_objects = result['indirect_objects']
             
             for subject in subjects:
+                subject = subject.lower()
                 for i, verb in enumerate(verbs):
                     # Direct objects
                     for j, obj in enumerate(objects):
+                        obj = obj.lower()
                         if verb == "IS":
                             say.IS(subject, obj)
+                            # Assign an integer value 
+                            if subject not in STOP_WORDS:
+                                kb.graph.get_vertex(subject).set_value(100)
+                            if obj not in STOP_WORDS:
+                                kb.graph.get_vertex(obj).set_value(100)
+                            
                         elif verb == "HAS":
                             # Use corresponding anchor if available
                             anchor = anchors[j] if j < len(anchors) else "property"
+                            anchor = anchor.lower()
                             say.HAS(subject, anchor, obj)
+                            # Assign values
+                            if subject not in STOP_WORDS:
+                                kb.graph.get_vertex(subject).set_value(100)
+                            if anchor not in STOP_WORDS:
+                                kb.graph.get_vertex(anchor).set_value(100)
+                            if obj not in STOP_WORDS:
+                                kb.graph.get_vertex(obj).set_value(100)
                     
                     # Indirect objects
                     for ind_obj in indirect_objects:
+                        ind_obj = ind_obj.lower()
                         if verb == "IS":
                             say.IS(subject, ind_obj)
+                            # Assign an integer value
+                            if subject not in STOP_WORDS:
+                                kb.graph.get_vertex(subject).set_value(100)
+                            if ind_obj not in STOP_WORDS:
+                                kb.graph.get_vertex(ind_obj).set_value(100)
                         elif verb == "HAS":
                             # For indirect objects, use generic anchor
                             anchor = "property"
                             say.HAS(subject, anchor, ind_obj)
+                            # Assign an integer value
+                            if subject not in STOP_WORDS:
+                                kb.graph.get_vertex(subject).set_value(100)
+                            if anchor not in STOP_WORDS:
+                                kb.graph.get_vertex(anchor).set_value(100)
+                            if ind_obj not in STOP_WORDS:
+                                kb.graph.get_vertex(ind_obj).set_value(100)
         
         return kb
     
-    def visualize(self, db_name: str, output_file: str, physics: bool = True) -> str:
+    def visualize(self, 
+                  db_name: str,
+                  output_file: str, 
+                  physics: bool = True,
+                  vertex_query: Optional[str] = None,
+                  arc_query: Optional[str] = None,) -> str:
         """Visualize knowledge graph from database.
         
         Args:
             db_name: Database name/path
             output_file: Output HTML filename
             physics: Whether to enable physics simulation
+            vertex_query: Optional SQL query to filter vertices
+            arc_query: Optional SQL query to filter arcs
             
         Returns:
             Absolute path to saved visualization
         """
-        graph = GraphBuilder.build_from_database(db_name)
+        graph = GraphBuilder.build_from_query(db_name, vertex_query=vertex_query, arc_query=arc_query)
         return GraphBuilder.save_as_html(graph=graph, filename=output_file, physics=physics)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

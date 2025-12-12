@@ -2,6 +2,7 @@
 # Filename: Conception.py
 # Description: Implementation of the Conception class
 
+from cor.knowledge.Concept import Concept
 from cor.metagraph.MetaGraph import MetaGraph, Vertex, Arc
 from core.utilities.Errors import ErrorCode
 

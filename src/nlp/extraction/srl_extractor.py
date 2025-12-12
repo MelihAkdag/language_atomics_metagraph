@@ -3,7 +3,6 @@
 from typing import Dict, List
 import spacy
 
-
 class SRLExtractor:
     """Extracts semantic roles from sentences using spaCy."""
     
@@ -68,7 +67,7 @@ class SRLExtractor:
             if "obj" in token.dep_ and "HAS" not in verbs:
                 objects.append(token.text)
             
-            # Extract indirect objects
+            # Extract indirect objects (dative as "to her", "for him", etc.)
             if "dative" in token.dep_:
                 indirect_objects.append(token.text)
         
@@ -101,7 +100,7 @@ class SRLExtractor:
             # Direct object is usually the anchor (attribute name)
             if child.dep_ == "dobj":
                 anchor = child.text
-                
+
                 # Check for compound nouns (e.g., "home address")
                 compounds = [c.text for c in child.children if c.dep_ == "compound"]
                 if compounds:
@@ -115,12 +114,14 @@ class SRLExtractor:
                         # e.g., "address at 23 Dalcant"
                         for prep_child in grandchild.children:
                             if prep_child.dep_ == "pobj":
-                                obj = prep_child.text
-                                # Get full prepositional object with compounds
+                                # Get full prepositional object with compounds/numbers
                                 compounds = [c.text for c in prep_child.children 
                                            if c.dep_ in ["compound", "nummod"]]
                                 if compounds:
                                     obj = " ".join(compounds + [prep_child.text])
+                                else:
+                                    obj = prep_child.text
+                                break  # Take the first pobj found
                 
                 # If no specific object found, use a compound or the anchor itself
                 if not obj:
