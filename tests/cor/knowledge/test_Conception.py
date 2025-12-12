@@ -5,14 +5,9 @@
 from cor.knowledge.Conception import Conception
 from cor.knowledge.Concept import Concept
 from cor.knowledge.Knowledge import Knowledge
-from core.utilities.Errors import ErrorCode
 
 import unittest
 
-def print_node(node:Concept, ctxt, level:int):
-	level	 = 1024-level
-	print( f'{" " * level} Node: {node.name} (id={node.id})' )
-	return ErrorCode.ERROR_CONTINUE
 
 class ConceptCloudTestCase(unittest.TestCase):
 	@classmethod
@@ -24,19 +19,46 @@ class ConceptCloudTestCase(unittest.TestCase):
 		return
 		
 	def setUp(self):
-		self.kb = Knowledge('graph')
+		self.lhs	= Conception()
+		self.rhs	= Conception()
+
+		self.lhs.load({
+			'A': ['B','C'],
+			'B': ['D','C'],
+			'C': ['D'],
+			'D': [],
+			})
+
+		self.rhs.load({
+			'A': ['B'],
+			'B': ['E','F'],
+			'E': ['F'],
+			'F': ['B','E'],
+			})
+
 		return
 		
 	def tearDown(self):
 		return
 		
-	def test_load(self):
-		c = Conception()
-		c.load('Melih', self.kb, depth=2)
+	def test_union(self):
+		u = self.lhs.union( self.rhs )
+		print(f'Union({len(u.vertices)}):{u}')
+		return
 
-		print( f'vertices = {len(c.vertices)}' )
+	def test_intersection(self):
+		u = self.lhs.intersection( self.rhs )
+		print(f'Intersection({len(u.vertices)}):{u}')
+		return
 
-		c.root.dfs( print_node, None, True )
+	def test_difference(self):
+		u = self.lhs.difference( self.rhs )
+		print(f'Difference({len(u.vertices)}):{u}')
+		return
+
+	def test_symmetric_difference(self):
+		u = self.lhs.symmetric_difference( self.rhs )
+		print(f'Symmetric Difference({len(u.vertices)}):{u}')
 		return
 
 if __name__ == '__main__':

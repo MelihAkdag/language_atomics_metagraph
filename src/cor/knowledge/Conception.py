@@ -14,23 +14,93 @@ class PrintCtxt:
 	
 
 class Conception(MetaGraph):
-	def __init__(self):
+	def __init__(self, name=None, kb=None, depth=3):
 		MetaGraph.__init__(self)
 		self.root	= None
+
+		# Load the conception from knowledge base
+		if name is not None and kb is not None:
+			kb.load( self, name, depth )
+				
 		return	
 
+	def remove(self, vertex):
+		if self.root is not None and vertex.id == self.root.id:
+			MetaGraph.remove(self, vertex)
+			self.root = list(self.vertices.values())[0] if len(self.vertices) > 0 else None
+		else:
+			MetaGraph.remove(self, vertex)
 
-	def union(self, other_knowledge):
-		pass
+	def new_vertex(self, id=-1, weight=1.0, name="", guid=None):
+		return Concept(name, id, weight,  guid)
 
-	def intersection(self, other_knowledge):
-		pass
+	def load(self, info):
+		for k in info.keys():
+			c 	= Concept(k)
+			if self.root is None:
+				self.root = c
 
-	def difference(self, other_knowledge):
-		pass
+			self.add( c )
 
-	def symmetric_difference(self, other_knowledge):
-		pass
+	
+		for k, v in info.items():
+			for e in v:
+				self.join( k, e )
+		return self
+	
+	def clone(self):
+		copy = Conception()
+		v	= self.root
+		if v is not None:
+			copy.root = self.new_vertex(v.id, v.weight, v.name, v.guid)
+			copy.add( copy.root )
+		
+		self.copy_to( copy )
+	
+		if v is not None:
+			for a in v.arcs:
+				copy.join( a.start.name, a.end.name, a.weight, a.name, a.anchor, a.guid, a.id )
+
+		return copy		
+
+
+	def union(self, rhs:MetaGraph):
+		return self.clone().union_update( rhs )
+
+	def intersection(self, rhs:MetaGraph):
+		return self.clone().intersection_update( rhs )
+
+	def difference(self, rhs:MetaGraph):
+		return self.clone().difference_update( rhs )
+
+	def symmetric_difference(self, rhs:MetaGraph):
+		return self.clone().symmetric_difference_update( rhs )
+	
+	def union_update(self, rhs:MetaGraph):
+		rhs.copy_to( self )
+		return self
+
+	def intersection_update(self, rhs:MetaGraph):
+		rhsset	= rhs.to_set()
+		lhsset	= self.to_set()
+		result	= lhsset.intersection( rhsset )
+		return self.filter(result)
+
+	def difference_update(self, rhs):
+		rhsset	= rhs.to_set()
+		lhsset	= self.to_set()
+		result	= lhsset.difference( rhsset )
+		return self.filter(result)
+
+	def symmetric_difference_update(self, rhs):
+		rhsset	= rhs.to_set()
+		lhsset	= self.to_set()
+		result	= lhsset.symmetric_difference( rhsset )
+
+		# Need top copy to incorporate all vertices and arcs from 'rhset'
+		rhs.copy_to( self )
+		return self.filter(result)
+
 
 	@property
 	def name(self):

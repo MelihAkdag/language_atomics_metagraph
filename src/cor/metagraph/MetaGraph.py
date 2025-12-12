@@ -26,6 +26,7 @@ class Vertex:
 		self.name		= name
 		self.weight		= weight
 		self.arcs		= []
+		self.anchor		= None
 		return
 
 	def connected(self, b):
@@ -237,7 +238,11 @@ class Vertex:
 			return self.anchor.traverse_dfs( fn, ctxt , maxlevel, visitanchor, visited, preproc, postproc )
 		else:
 			return self.anchor.traverse_bfs( fn, ctxt , maxlevel, visitanchor, visited, preproc, postproc )
-			
+
+	@property
+	def num_arcs(self):			
+		return len(self.arcs)
+
 	
 class MetaGraph:
 	def __init__(self):
@@ -251,18 +256,52 @@ class MetaGraph:
 		self.vertices[vertex.name] = vertex
 		return True
 
-	def remove(self, vertex):		
+	def remove(self, vertex):
 		for v in self.vertices.values():
-			if v == vertex:
+			if v.id == vertex.id:
 				continue
 			
-			for a in v.arcs:
-				if a.end == vertex:
+			for a in list(v.arcs):
+				if (a.end.id == vertex.id) or (a.start.id == vertex.id):
 					v.arcs.remove( a )
-					break
 	
 		del self.vertices[vertex.name]
 		return
+
+	def filter(self, matches:set):
+		remove_list = []
+		for v in self.vertices.values():
+			if v.id not in matches:
+				remove_list.append( v )
+		
+		for v in remove_list:
+			self.remove( v )
+		return self
+
+	def clone(self):
+		return self.copy_to( MetaGraph() )
+
+	def copy_to(self, copy):		
+		# Clone vertices
+		for v in self.vertices.values():
+			copy.add( self.new_vertex(v.id, v.weight, v.name, v.guid) )
+		
+		# Clone arcs
+		for v in self.vertices.values():
+			for a in v.arcs:
+				copy.join( a.start.name, a.end.name, a.weight, a.name, a.anchor, a.guid, a.id )
+		
+		return copy
+
+	def new_vertex(self, id=-1, weight=1.0, name="", guid=None):
+		return Vertex(id, weight, name, guid)
+	
+	def to_set(self):
+		result = set()
+		for v in self.vertices.values():
+			result.add( v.id )
+
+		return result
 
 	def join(self, a, b, weight=1.0, name="", anchor=None, guid=None, aid=-1):
 		a = self.get_vertex(a)
@@ -366,7 +405,7 @@ class MetaGraph:
 	def num_arcs(self):
 		count = 0
 		for v in self.vertices.values():
-			count += len(v.arcs)
+			count += v.num_arcs
 			
 		return count
 
