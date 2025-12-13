@@ -249,9 +249,9 @@ class GraphDatabase:
 		c	= self.__get_vertex_model().conn.cursor()
 		
 		if guid == None:
-			c.execute('SELECT id FROM vertices WHERE id={} AND name=?'.format(self.id), t  )
+			c.execute('SELECT id FROM vertices WHERE graph_id={} AND name=?'.format(self.id), t  )
 		else:
-			c.execute('SELECT id FROM vertices WHERE id={} AND guid=?'.format(self.id), t  )
+			c.execute('SELECT id FROM vertices WHERE graph_id={} AND guid=?'.format(self.id), t  )
 
 		row	= c.fetchone()
 		if row == None:
@@ -260,10 +260,10 @@ class GraphDatabase:
 		return row[0]
 				
 	def get_num_vertices(self):
-		return self.__get_vertex_model().get_object_count( 'id={}'.format(self.id) )
+		return self.__get_vertex_model().get_object_count( 'graph_id={}'.format(self.id) )
 
 	def get_num_arcs(self):
-		return self.__get_arc_model().get_object_count( 'id={}'.format(self.id) )
+		return self.__get_arc_model().get_object_count( 'graph_id={}'.format(self.id) )
 			
 	def delete_vertex(self, name):
 		vid	= self.get_vertex_id(name)
