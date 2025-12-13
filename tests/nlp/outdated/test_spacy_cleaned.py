@@ -88,7 +88,7 @@ def primitives_srl(sentence, nlp):
 
 
 
-def save_to_database(srl_results, name="knowledge", template="templates/graph.s3db"):
+def save_to_database(srl_results, name="knowledge", template=None):
     """ Save SRL results to knowledge database.
      
     Args:
@@ -219,10 +219,9 @@ for sent in tqdm(sentences, desc="Extracting SRL", unit="sentence"):
 
 # Save the graph to database
 print("Saving to database...")
-template_path = "templates/graph.s3db"
 script_dir = os.path.dirname(os.path.abspath(__file__))
 db_path = os.path.join(script_dir, "db_frankenstein")
-kb = save_to_database(srl_results_primitives, name=db_path, template=template_path)
+kb = save_to_database(srl_results_primitives, name=db_path)
 
 # Visualize the graph as html from database
 print("Building visualization...")

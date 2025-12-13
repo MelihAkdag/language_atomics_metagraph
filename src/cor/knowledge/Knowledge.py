@@ -22,6 +22,7 @@ class Knowledge:
 			self.graph.create(name,1)
 			return
 		
+		template	= Knowledge.__find_template(template)
 		if template is None:
 			raise FileNotFoundError(f'Database file {path} does not exist.')
 		
@@ -30,6 +31,31 @@ class Knowledge:
 		self.graph	= MetaGraphDatabase(path)
 		self.graph.create(name,1)
 		return
+
+	@staticmethod
+	def template():		
+		cordir	= os.environ.get('COR_DIR')
+		dbpath	= os.path.join(cordir, f'templates{os.sep}graph.s3db')
+		if os.path.isfile(dbpath):
+			return dbpath
+		
+		return None
+
+	@staticmethod
+	def config():		
+		cordir	= os.environ.get('COR_DIR')
+		path	= os.path.join(cordir, 'config')
+		if os.path.isdir(path):
+			return path
+		
+		return None
+
+	@staticmethod
+	def __find_template(template):
+		if template is not None:
+			return template
+		
+		return Knowledge.template()
 	
 	def speak(self):
 		if self.language is None:
