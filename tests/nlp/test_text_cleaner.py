@@ -8,7 +8,7 @@ import unittest
 src_path = os.path.join(os.path.dirname(__file__), '..', '..', 'src')
 sys.path.insert(0, src_path)
 
-from nlp.preprocessing.text_cleaner import TextCleaner
+from nlp.preprocessing.TextCleaner import TextCleaner
 
 
 class TestTextCleaner(unittest.TestCase):

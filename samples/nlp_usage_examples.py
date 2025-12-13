@@ -17,7 +17,7 @@ def example_text_cleaner():
     print("Example 1: Text Cleaning")
     print("="*60)
     
-    from nlp.preprocessing.text_cleaner import TextCleaner
+    from nlp.preprocessing.TextCleaner import TextCleaner
     
     text = """This is a sample text.
     It has multiple    spaces   and
@@ -38,7 +38,7 @@ def example_srl_extractor():
     print("Example 2: Semantic Role Labeling")
     print("="*60)
     
-    from nlp.extraction.srl_extractor import SRLExtractor
+    from nlp.extraction.SRLExtractor import SRLExtractor
     
     extractor = SRLExtractor()
     
@@ -62,7 +62,7 @@ def example_full_pipeline():
     print("Example 3: Complete Pipeline")
     print("="*60)
     
-    from nlp.pipeline.knowledge_pipeline import KnowledgePipeline
+    from nlp.pipeline.KnowledgePipeline import KnowledgePipeline
     
     # Initialize pipeline
     pipeline = KnowledgePipeline()
