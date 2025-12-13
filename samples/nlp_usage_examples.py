@@ -6,10 +6,6 @@ This demonstrates how to use individual modules or the complete pipeline.
 import os
 import sys
 
-# Add src to path
-src_path = os.path.join(os.path.dirname(__file__), '..', 'src')
-sys.path.insert(0, src_path)
-
 
 def example_text_cleaner():
     """Example: Using TextCleaner independently."""
@@ -78,16 +74,15 @@ def example_full_pipeline():
     project_root = os.path.join(os.path.dirname(__file__), '..')
     data_dir = os.path.join(project_root, 'data')
     
-    template_path = os.path.join(project_root, 'tests', 'cor', 'knowledge', 'graph.s3db')
     db_path = os.path.join(data_dir, 'databases', 'example_output_db')
     html_path = os.path.join(data_dir, 'visualizations', 'example_graph.html')
     
     print("\nProcessing text...")
-    kb = pipeline.process_text(text, db_path, template=template_path, verbose=True)
+    kb = pipeline.process_text(text, db_path)
     
     print("\nGenerating visualization...")
-    pipeline.visualize(db_path, html_path)
-    
+    pipeline.visualize(db_path, html_path) 
+
     print(f"\n✅ Graph saved to: {html_path}")
     print("Open it in your browser to see the knowledge graph!")
 

@@ -161,7 +161,12 @@ class KnowledgePipeline:
         Returns:
             Absolute path to saved visualization
         """
-        graph = GraphBuilder.build_from_query(db_name, vertex_query=vertex_query, arc_query=arc_query)
+        if vertex_query or arc_query:
+            print("Building graph from queries...")
+            graph = GraphBuilder.build_from_query(db_name, vertex_query=vertex_query, arc_query=arc_query)
+        else:
+            print("Building graph from database...")
+            graph = GraphBuilder.build_from_database(db_name)
         return GraphBuilder.save_as_html(graph=graph, filename=output_file, physics=physics)
 
 
