@@ -8,7 +8,7 @@ import unittest
 src_path = os.path.join(os.path.dirname(__file__), '..', '..', 'src')
 sys.path.insert(0, src_path)
 
-from nlp.extraction.srl_extractor import SRLExtractor
+from nlp.extraction.SRLExtractor import SRLExtractor
 
 
 class TestSRLExtractor(unittest.TestCase):
