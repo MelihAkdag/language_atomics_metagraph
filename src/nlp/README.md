@@ -9,16 +9,16 @@ nlp/
 ├── __init__.py              # Package initialization
 ├── preprocessing/           # Text preprocessing utilities
 │   ├── __init__.py
-│   └── text_cleaner.py     # Text cleaning and normalization
+│   └── TextCleaner.py     # Text cleaning and normalization
 ├── extraction/             # Information extraction
 │   ├── __init__.py
-│   └── srl_extractor.py    # Semantic Role Labeling
+│   └── SRLExtractor.py    # Semantic Role Labeling
 ├── visualization/          # Graph visualization
 │   ├── __init__.py
-│   └── graph_builder.py    # Knowledge graph visualization
+│   └── GraphBuilder.py    # Knowledge graph visualization
 └── pipeline/               # End-to-end pipelines
     ├── __init__.py
-    └── knowledge_pipeline.py # Complete extraction pipeline
+    └── KnowledgePipeline.py # Complete extraction pipeline
 ```
 
 ## Usage
@@ -26,7 +26,7 @@ nlp/
 ### Basic Pipeline Usage
 
 ```python
-from nlp.pipeline.knowledge_pipeline import KnowledgePipeline
+from nlp.pipeline.KnowledgePipeline import KnowledgePipeline
 
 # Initialize pipeline
 pipeline = KnowledgePipeline()
@@ -42,8 +42,8 @@ pipeline.visualize("output_db", "graph.html")
 ### Using Individual Components
 
 ```python
-from nlp.preprocessing.text_cleaner import TextCleaner
-from nlp.extraction.srl_extractor import SRLExtractor
+from nlp.preprocessing.TextCleaner import TextCleaner
+from nlp.extraction.SRLExtractor import SRLExtractor
 
 # Clean text
 cleaner = TextCleaner()
@@ -73,8 +73,8 @@ result = extractor.extract_primitives("The cat is on the mat.")
 
 Run unit tests:
 ```bash
-python -m unittest tests/nlp/test_text_cleaner.py
-python -m unittest tests/nlp/test_srl_extractor.py
+python -m unittest tests/nlp/test_TextCleaner.py
+python -m unittest tests/nlp/test_SRLExtractor.py
 ```
 
 Run integration test:

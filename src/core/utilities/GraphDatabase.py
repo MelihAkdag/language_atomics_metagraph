@@ -9,12 +9,15 @@ import uuid
 from datetime import datetime
 
 class GraphDatabaseConnection:
-	def __init__(self, dbpath):
-		self.dbpath		= dbpath
+	def __init__(self, path):
+		self.path		= path
 		return
 
 	def create(self, table:str):
-		return ActiveRecord.create('', self.dbpath, table)
+		return ActiveRecord.create('', self.path, table)
+	
+	def connect(self):
+		return ActiveRecord.connect( self.path )
 
 class Arc(MultiTableActiveObject):
 	def __init__(self, rec, arc_id):
@@ -22,7 +25,7 @@ class Arc(MultiTableActiveObject):
 		return
 		
 	def is_property(self, field):
-		return field not in ['id','guid','graph_id','name','clsid','objid','type','weight','start','end']
+		return field not in ['id','guid','id','name','clsid','objid','type','weight','start','end']
 
 	def get_property_table(self, field_type):
 		if field_type == None:
@@ -45,7 +48,7 @@ class Vertex(MultiTableActiveObject):
 		return
 
 	def is_property(self, field):
-		return field not in ['id','guid','graph_id','name','clsid','objid','x','y','type','value','source']
+		return field not in ['id','guid','id','name','clsid','objid','x','y','type','value','source']
 
 	def get_property_table(self, field_type):
 		if field_type == None:
@@ -77,7 +80,7 @@ class Vertex(MultiTableActiveObject):
 class GraphDatabase:
 	def __init__(self, dbpath:str, graph_id=-1, conn=None):
 		self.conn		= conn if conn is not None else GraphDatabaseConnection(dbpath)
-		self.graph_id	= graph_id
+		self.id			= graph_id
 		self.db			= None
 		return
 	
@@ -85,7 +88,8 @@ class GraphDatabase:
 		return self.conn.create(table)
 	
 	def __get_db(self, table='graphs'):
-		self.db = self.conn.create(table)
+		if self.db is None:
+			self.db = self.conn.create(table)
 		return self.db
 	
 	def create(self, name, graph_type, guid=None, description=None, metadata=None):
@@ -110,7 +114,7 @@ class GraphDatabase:
 			'metadata': metadata,
 			'type': graph_type }
 
-		self.graph_id = self.__get_db().add( values )
+		self.id = self.__get_db().add( values )
 		return True
 	
 	def open(self, name, guid=None):
@@ -121,11 +125,11 @@ class GraphDatabase:
 		db = self.__get_db()
 
 		if guid == None:
-			self.graph_id = db.get_unique_by('id', 'name', name)
+			self.id = db.get_unique_by('id', 'name', name)
 		else:
-			self.graph_id = db.get_unique_by('id', 'guid', guid)
+			self.id = db.get_unique_by('id', 'guid', guid)
 
-		if self.graph_id == None:
+		if self.id == None:
 			return False
 		
 		return True
@@ -139,11 +143,11 @@ class GraphDatabase:
 		
 	def get_vertices(self):
 		rec = self.__get_vertex_model()
-		return rec.get_object_list( f'graph_id={self.graph_id}')
+		return rec.get_object_list( f'id={self.id}')
 
 	def get_arcs(self):
 		rec = self.__get_arc_model()
-		return rec.get_object_list( f'graph_id={self.graph_id}')
+		return rec.get_object_list( f'id={self.id}')
 
 	def get_vertex_props(self, table="vertex_props")->ActiveRecord:
 		return self.__getitem__(table)
@@ -173,7 +177,7 @@ class GraphDatabase:
 			
 		creation_time = datetime.utcnow()
 		values = {
-			'graph_id':self.graph_id,
+			'graph_id':self.id,
 			'guid': guid,
 			'creation_time': creation_time,
 			'name': name,
@@ -245,9 +249,9 @@ class GraphDatabase:
 		c	= self.__get_vertex_model().conn.cursor()
 		
 		if guid == None:
-			c.execute('SELECT id FROM vertices WHERE graph_id={} AND name=?'.format(self.graph_id), t  )
+			c.execute('SELECT id FROM vertices WHERE id={} AND name=?'.format(self.id), t  )
 		else:
-			c.execute('SELECT id FROM vertices WHERE graph_id={} AND guid=?'.format(self.graph_id), t  )
+			c.execute('SELECT id FROM vertices WHERE id={} AND guid=?'.format(self.id), t  )
 
 		row	= c.fetchone()
 		if row == None:
@@ -256,10 +260,10 @@ class GraphDatabase:
 		return row[0]
 				
 	def get_num_vertices(self):
-		return self.__get_vertex_model().get_object_count( 'graph_id={}'.format(self.graph_id) )
+		return self.__get_vertex_model().get_object_count( 'id={}'.format(self.id) )
 
 	def get_num_arcs(self):
-		return self.__get_arc_model().get_object_count( 'graph_id={}'.format(self.graph_id) )
+		return self.__get_arc_model().get_object_count( 'id={}'.format(self.id) )
 			
 	def delete_vertex(self, name):
 		vid	= self.get_vertex_id(name)
@@ -295,7 +299,7 @@ class GraphDatabase:
 		fromid, toid	= self.resolve_vertex(start, end)
 
 		c	= self.__get_arc_model().conn.cursor()
-		c.execute('SELECT id FROM arcs WHERE graph_id={} AND start={} AND end={}'.format(self.graph_id, fromid, toid) )
+		c.execute('SELECT id FROM arcs WHERE id={} AND start={} AND end={}'.format(self.id, fromid, toid) )
 		row	= c.fetchone()
 		if row == None:
 			return None
@@ -309,7 +313,7 @@ class GraphDatabase:
 			fromid	= self.__get_safe_vertex_id(start)
 
 		c	= self.__get_arc_model().conn.cursor()
-		c.execute('SELECT id FROM arcs WHERE graph_id={} AND start={}'.format(self.graph_id, fromid) )
+		c.execute('SELECT id FROM arcs WHERE id={} AND start={}'.format(self.id, fromid) )
 		idList	= []
 		for row in c:
 			idList.append( row[0] )
@@ -346,7 +350,7 @@ class GraphDatabase:
 
 		creation_time = datetime.utcnow()
 		values = {
-			'graph_id':self.graph_id,
+			'graph_id':self.id,
 			'guid': guid,
 			'creation_time': creation_time,
 			'name':name,

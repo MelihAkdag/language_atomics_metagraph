@@ -38,11 +38,34 @@ class Knowledge:
 		return self.language
 
 	def slice(self, name:str, depth:int):
-		c = Conception()
-		self.load(c, name, depth)
-		return c
+		concept = Conception()
+		self.load(concept, name, depth)
+		return concept
 
+	def get_all(self):
+		concept = Conception()
+		conn 	= self.graph.conn.connect()
+		t   	= (self.graph.id,)
 
+		# Get vertices
+		c		= conn.cursor()
+		c.execute('SELECT id, name, value, guid, clsid, objid FROM vertices WHERE graph_id=?', t)
+		for row in c:
+			v = Concept( row[1], row[0], row[2], row[3] )
+			concept.add( v )
+			if concept.root is None:
+				concept.root = v
+		c.close()
+
+		# Get arcs
+		c		= conn.cursor()
+		c.execute('SELECT id, name, weight, guid, start, end, anchor FROM arcs WHERE graph_id=?', t)
+		for row in c:
+			a = concept.join( row[4], row[5], row[2], row[6], row[0] )
+		c.close()
+
+		return concept
+	
 	def __getitem__(self, name):
 		v = self.graph.get_vertex_by_name(name, auto_add=False)
 		if v is None:

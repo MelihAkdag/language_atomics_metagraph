@@ -1,5 +1,5 @@
 """Information extraction utilities."""
 
-from nlp.extraction.srl_extractor import SRLExtractor
+from nlp.extraction.SRLExtractor import SRLExtractor
 
 __all__ = ['SRLExtractor']

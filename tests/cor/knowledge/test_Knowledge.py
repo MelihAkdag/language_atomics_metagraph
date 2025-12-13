@@ -86,5 +86,11 @@ class KnowledgeTestCase(unittest.TestCase):
 		print( c )
 		return
 
+	def test_load(self):
+		c = self.kb.get_all()
+		print( f'vertices = {len(c.vertices)}' )
+		print( c )
+		return
+
 if __name__ == '__main__':
     unittest.main()

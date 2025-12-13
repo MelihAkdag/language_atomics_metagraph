@@ -6,9 +6,9 @@ import spacy
 from spacy.lang.en.stop_words import STOP_WORDS
 
 from cor.knowledge.Knowledge import Knowledge
-from nlp.preprocessing.text_cleaner import TextCleaner
-from nlp.extraction.srl_extractor import SRLExtractor
-from nlp.visualization.graph_builder import GraphBuilder
+from nlp.preprocessing.TextCleaner import TextCleaner
+from nlp.extraction.SRLExtractor import SRLExtractor
+from nlp.visualization.GraphBuilder import GraphBuilder
 
 
 class KnowledgePipeline:

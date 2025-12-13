@@ -19,17 +19,14 @@ class ConceptCloudTestCase(unittest.TestCase):
 		return
 		
 	def setUp(self):
-		self.lhs	= Conception()
-		self.rhs	= Conception()
-
-		self.lhs.load({
+		self.lhs	= Conception().load({
 			'A': ['B','C'],
 			'B': ['D','C'],
 			'C': ['D'],
 			'D': [],
 			})
 
-		self.rhs.load({
+		self.rhs	= Conception().load({
 			'A': ['B'],
 			'B': ['E','F'],
 			'E': ['F'],
@@ -42,22 +39,22 @@ class ConceptCloudTestCase(unittest.TestCase):
 		return
 		
 	def test_union(self):
-		u = self.lhs.union( self.rhs )
+		u = self.lhs + self.rhs
 		print(f'Union({len(u.vertices)}):{u}')
 		return
 
 	def test_intersection(self):
-		u = self.lhs.intersection( self.rhs )
+		u = self.lhs / self.rhs
 		print(f'Intersection({len(u.vertices)}):{u}')
 		return
 
 	def test_difference(self):
-		u = self.lhs.difference( self.rhs )
+		u = self.lhs - self.rhs
 		print(f'Difference({len(u.vertices)}):{u}')
 		return
 
 	def test_symmetric_difference(self):
-		u = self.lhs.symmetric_difference( self.rhs )
+		u = self.lhs % self.rhs
 		print(f'Symmetric Difference({len(u.vertices)}):{u}')
 		return
 

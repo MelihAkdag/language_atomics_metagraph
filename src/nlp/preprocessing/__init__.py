@@ -1,5 +1,5 @@
 """Text preprocessing utilities."""
 
-from nlp.preprocessing.text_cleaner import TextCleaner
+from nlp.preprocessing.TextCleaner import TextCleaner
 
 __all__ = ['TextCleaner']

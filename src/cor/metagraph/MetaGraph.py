@@ -131,12 +131,18 @@ class Vertex:
 
 			if preproc is not None:
 				result	= preproc( a.end, ctxt, maxlevel )
-				
+
+				if result == ErrorCode.ERROR_NO_MORE_ITEMS:
+					return ErrorCode.ERROR_CONTINUE
+
 				if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
 					return result
 				
 			result	= a.end.visit( fn, ctxt, visitanchor, visited, maxlevel, preproc, postproc, True )
 
+			if result == ErrorCode.ERROR_NO_MORE_ITEMS:
+				return ErrorCode.ERROR_CONTINUE
+			
 			if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
 				return result
 			
@@ -146,6 +152,9 @@ class Vertex:
 
 			if postproc is not None:
 				result	= postproc( a.end, ctxt, maxlevel )
+				
+				if result == ErrorCode.ERROR_NO_MORE_ITEMS:
+					return ErrorCode.ERROR_CONTINUE
 				
 				if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
 					return result
@@ -176,17 +185,25 @@ class Vertex:
 			if preproc is not None:
 				result	= preproc( a.end, ctxt, maxlevel )
 				
+				if result == ErrorCode.ERROR_NO_MORE_ITEMS:
+					return ErrorCode.ERROR_CONTINUE
+				
 				if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
 					return result
 				
 			result	= a.end.visit( fn, ctxt, visitanchor, visited, maxlevel, preproc, postproc, False )
-
+			
+			if result == ErrorCode.ERROR_NO_MORE_ITEMS:
+				return ErrorCode.ERROR_CONTINUE
 			
 			if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
 				return result
 
 			if postproc is not None:
 				result	= postproc( a.end, ctxt, maxlevel )
+				
+				if result == ErrorCode.ERROR_NO_MORE_ITEMS:
+					return ErrorCode.ERROR_CONTINUE
 				
 				if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
 					return result
@@ -208,7 +225,11 @@ class Vertex:
 	def visit(self, fn, ctxt, visitanchor, visited, maxlevel, preproc, postproc, isdfs=True ):
 		visited.add( self )
 		result	= fn( self, ctxt, maxlevel )
+
+		if result == ErrorCode.ERROR_NO_MORE_ITEMS:
+			return ErrorCode.ERROR_CONTINUE
 		
+
 		if visitanchor == False or self.anchor is None:
 			return result
 		
@@ -221,15 +242,22 @@ class Vertex:
 		if preproc is not None:
 			result	= preproc( self.anchor, ctxt, maxlevel )
 			
+			if result == ErrorCode.ERROR_NO_MORE_ITEMS:
+				return ErrorCode.ERROR_CONTINUE
+			
 			if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
 				return result
 
 		result	= fn( self.anchor, ctxt, maxlevel )
-		if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
+		
+		if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE, ErrorCode.ERROR_NO_MORE_ITEMS]:
 			return result
 
 		if postproc is not None:
 			result	= postproc( self.anchor, ctxt, maxlevel )
+			
+			if result == ErrorCode.ERROR_NO_MORE_ITEMS:
+				return ErrorCode.ERROR_CONTINUE
 			
 			if result not in [ErrorCode.NOERROR, ErrorCode.ERROR_CONTINUE]:
 				return result

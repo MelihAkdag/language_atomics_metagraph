@@ -101,6 +101,17 @@ class Conception(MetaGraph):
 		rhs.copy_to( self )
 		return self.filter(result)
 
+	def __add__(self, rhs):
+		return self.union( rhs )
+	
+	def __sub__(self, rhs):
+		return self.difference( rhs )
+	
+	def __mod__(self, rhs):
+		return self.symmetric_difference( rhs )
+	
+	def __truediv__(self, rhs):
+		return self.intersection( rhs )
 
 	@property
 	def name(self):
