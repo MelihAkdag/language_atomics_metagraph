@@ -25,14 +25,13 @@ def main():
         text = f.read()
     
     # Process text and build knowledge graph
-    template_path = os.path.join(project_root, 'tests', 'cor', 'knowledge', 'graph.s3db')
     db_path = os.path.join(data_dir, 'databases', 'db_frankenstein')
     
     print("=" * 60)
     print("NLP Knowledge Extraction Pipeline")
     print("=" * 60)
     
-    kb = pipeline.process_text(text, db_path, template=template_path)
+    kb = pipeline.process_text(text, db_path)
     
     # Visualize - save to data/visualizations
     html_path = os.path.join(data_dir, 'visualizations', 'frankenstein_knowledge_graph.html')
