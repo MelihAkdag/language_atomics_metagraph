@@ -8,10 +8,6 @@ import shutil
 import time
 import gc
 
-# Add src to path
-src_path = os.path.join(os.path.dirname(__file__), '..', '..', 'src')
-sys.path.insert(0, src_path)
-
 from nlp.pipeline.KnowledgePipeline import KnowledgePipeline
 
 
