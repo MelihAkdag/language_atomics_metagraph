@@ -11,8 +11,20 @@ def main():
     
     db_path = "data\\databases\\db_frankenstein"
     html_path = "data\\visualizations\\frankenstein_knowledge_graph.html"
-    
-    pipeline.visualize(db_path, html_path) 
+
+    # Example arc_query to filter specific arcs (Filter arcs connected to important vertices)
+    arc_query = """
+        SELECT *
+        FROM arcs
+        WHERE start IN (
+            SELECT id FROM vertices WHERE value=100
+        )
+        OR end IN (
+            SELECT id FROM vertices WHERE value=100
+    );
+    """
+
+    pipeline.visualize(db_name=db_path, output_file=html_path, arc_query=arc_query) 
     
     print("=" * 60)
     print("Visualization completed successfully!")

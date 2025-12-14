@@ -181,9 +181,12 @@ class KnowledgePipeline:
         Returns:
             Absolute path to saved visualization
         """
-        if vertex_query or arc_query:
+        if vertex_query:
             print("Building graph from queries...")
-            graph = GraphBuilder.build_from_query(db_name, vertex_query=vertex_query, arc_query=arc_query)
+            graph = GraphBuilder.build_from_query(db_name, vertex_query=vertex_query)
+        elif arc_query:
+            print("Building graph from queries...")
+            graph = GraphBuilder.build_from_query(db_name, arc_query=arc_query)
         else:
             print("Building graph from database...")
             graph = GraphBuilder.build_from_database(db_name)
