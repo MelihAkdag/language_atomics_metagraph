@@ -41,7 +41,7 @@ All output files are saved to the `data/` directory:
 
 When creating new example scripts:
 
-1. Place the script in this `examples/` directory
+1. Place the script in this `samples/` directory
 2. Use the data directory structure for inputs/outputs:
    - Load data from `data/raw/`
    - Save databases to `data/databases/`
@@ -49,26 +49,6 @@ When creating new example scripts:
 3. Add documentation to this README
 4. Include clear comments explaining each step
 
-### Example Template
-
-```python
-import os
-import sys
-
-# Add src to path
-src_path = os.path.join(os.path.dirname(__file__), '..', 'src')
-sys.path.insert(0, src_path)
-
-# Your imports
-from nlp.pipeline.knowledge_pipeline import KnowledgePipeline
-
-# Setup paths
-project_root = os.path.join(os.path.dirname(__file__), '..')
-data_dir = os.path.join(project_root, 'data')
-
-# Your example code here
-# Remember to use data/ directory for all inputs/outputs
-```
 
 ## Best Practices
 

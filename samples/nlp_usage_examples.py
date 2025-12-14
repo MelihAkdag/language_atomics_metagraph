@@ -70,12 +70,8 @@ def example_full_pipeline():
     The car is red. The book is interesting.
     """
     
-    # Process - use data directory structure
-    project_root = os.path.join(os.path.dirname(__file__), '..')
-    data_dir = os.path.join(project_root, 'data')
-    
-    db_path = os.path.join(data_dir, 'databases', 'example_output_db')
-    html_path = os.path.join(data_dir, 'visualizations', 'example_graph.html')
+    db_path = "data\\databases\\example_output_db"
+    html_path = "data\\visualizations\\example_graph.html"
     
     print("\nProcessing text...")
     kb = pipeline.process_text(text, db_path)
