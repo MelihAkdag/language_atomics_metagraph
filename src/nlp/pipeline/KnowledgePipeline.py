@@ -66,32 +66,32 @@ class KnowledgePipeline:
         return kb
     
     def _save_to_database(self, srl_results: List[Dict[str, List[str]]],
-                         db_name: str,
-                         template: Optional[str],
-                         verbose: bool) -> Knowledge:
+                     db_name: str,
+                     template: Optional[str],
+                     verbose: bool) -> Knowledge:
         """Save SRL results to knowledge database.
-        
+
         Args:
             srl_results: List of SRL extraction results
             db_name: Database name/path
             template: Optional template path
             verbose: Whether to show progress
-            
+
         Returns:
             Populated Knowledge database
         """
         kb = Knowledge(db_name, template)
         say = kb.speak()
-        
+
         iterator = tqdm(srl_results, desc="Saving to DB", unit="result") if verbose else srl_results
-        
+
         for result in iterator:
             subjects = result['subjects']
             verbs = result['verbs']
             objects = result['objects']
             anchors = result.get('anchors', [])
             indirect_objects = result['indirect_objects']
-            
+
             for subject in subjects:
                 subject = subject.lower()
                 for i, verb in enumerate(verbs):
@@ -100,47 +100,67 @@ class KnowledgePipeline:
                         obj = obj.lower()
                         if verb == "IS":
                             say.IS(subject, obj)
-                            # Assign an integer value 
+                            # Get or create vertices and assign values
                             if subject not in STOP_WORDS:
-                                kb.graph.get_vertex(subject).set_value(100)
+                                subject_vertex = kb.graph.get_vertex_by_name(subject, auto_add=False)
+                                if subject_vertex:
+                                    subject_vertex.set_value(100)
                             if obj not in STOP_WORDS:
-                                kb.graph.get_vertex(obj).set_value(100)
-                            
+                                obj_vertex = kb.graph.get_vertex_by_name(obj, auto_add=False)
+                                if obj_vertex:
+                                    obj_vertex.set_value(100)
+
                         elif verb == "HAS":
                             # Use corresponding anchor if available
                             anchor = anchors[j] if j < len(anchors) else "property"
                             anchor = anchor.lower()
                             say.HAS(subject, anchor, obj)
-                            # Assign values
+                            # Get or create vertices and assign values
                             if subject not in STOP_WORDS:
-                                kb.graph.get_vertex(subject).set_value(100)
+                                subject_vertex = kb.graph.get_vertex_by_name(subject, auto_add=False)
+                                if subject_vertex:
+                                    subject_vertex.set_value(100)
                             if anchor not in STOP_WORDS:
-                                kb.graph.get_vertex(anchor).set_value(100)
+                                anchor_vertex = kb.graph.get_vertex_by_name(anchor, auto_add=False)
+                                if anchor_vertex:
+                                    anchor_vertex.set_value(100)
                             if obj not in STOP_WORDS:
-                                kb.graph.get_vertex(obj).set_value(100)
-                    
+                                obj_vertex = kb.graph.get_vertex_by_name(obj, auto_add=False)
+                                if obj_vertex:
+                                    obj_vertex.set_value(100)
+
                     # Indirect objects
                     for ind_obj in indirect_objects:
                         ind_obj = ind_obj.lower()
                         if verb == "IS":
                             say.IS(subject, ind_obj)
-                            # Assign an integer value
+                            # Get or create vertices and assign values
                             if subject not in STOP_WORDS:
-                                kb.graph.get_vertex(subject).set_value(100)
+                                subject_vertex = kb.graph.get_vertex_by_name(subject, auto_add=False)
+                                if subject_vertex:
+                                    subject_vertex.set_value(100)
                             if ind_obj not in STOP_WORDS:
-                                kb.graph.get_vertex(ind_obj).set_value(100)
+                                ind_obj_vertex = kb.graph.get_vertex_by_name(ind_obj, auto_add=False)
+                                if ind_obj_vertex:
+                                    ind_obj_vertex.set_value(100)
                         elif verb == "HAS":
                             # For indirect objects, use generic anchor
                             anchor = "property"
                             say.HAS(subject, anchor, ind_obj)
-                            # Assign an integer value
+                            # Get or create vertices and assign values
                             if subject not in STOP_WORDS:
-                                kb.graph.get_vertex(subject).set_value(100)
+                                subject_vertex = kb.graph.get_vertex_by_name(subject, auto_add=False)
+                                if subject_vertex:
+                                    subject_vertex.set_value(100)
                             if anchor not in STOP_WORDS:
-                                kb.graph.get_vertex(anchor).set_value(100)
+                                anchor_vertex = kb.graph.get_vertex_by_name(anchor, auto_add=False)
+                                if anchor_vertex:
+                                    anchor_vertex.set_value(100)
                             if ind_obj not in STOP_WORDS:
-                                kb.graph.get_vertex(ind_obj).set_value(100)
-        
+                                ind_obj_vertex = kb.graph.get_vertex_by_name(ind_obj, auto_add=False)
+                                if ind_obj_vertex:
+                                    ind_obj_vertex.set_value(100)
+
         return kb
     
     def visualize(self, 
