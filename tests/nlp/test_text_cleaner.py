@@ -4,10 +4,6 @@ import os
 import sys
 import unittest
 
-# Add src to path
-src_path = os.path.join(os.path.dirname(__file__), '..', '..', 'src')
-sys.path.insert(0, src_path)
-
 from nlp.preprocessing.TextCleaner import TextCleaner
 
 

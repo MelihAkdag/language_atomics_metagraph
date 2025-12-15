@@ -3,9 +3,6 @@
 import os
 import sys
 
-# Add src to path
-src_path = os.path.join(os.path.dirname(__file__), '..', 'src')
-sys.path.insert(0, src_path)
 
 from nlp.pipeline.KnowledgePipeline import KnowledgePipeline
 
@@ -15,31 +12,21 @@ def main():
     # Initialize pipeline
     pipeline = KnowledgePipeline()
     
-    # Setup paths - use data directory structure
-    project_root = os.path.join(os.path.dirname(__file__), '..')
-    data_dir = os.path.join(project_root, 'data')
-    
-    # Load text from data/raw
-    text_path = os.path.join(data_dir, 'raw', 'frankenstein.txt')
+    text_path = "data\\raw\\frankenstein.txt"
     with open(text_path, 'r', encoding='utf-8') as f:
         text = f.read()
-    
-    # Process text and build knowledge graph
-    template_path = os.path.join(project_root, 'tests', 'cor', 'knowledge', 'graph.s3db')
-    db_path = os.path.join(data_dir, 'databases', 'db_frankenstein')
     
     print("=" * 60)
     print("NLP Knowledge Extraction Pipeline")
     print("=" * 60)
     
-    kb = pipeline.process_text(text, db_path, template=template_path)
-    
-    # Visualize - save to data/visualizations
-    html_path = os.path.join(data_dir, 'visualizations', 'frankenstein_knowledge_graph.html')
+    db_path = "data\\databases\\db_frankenstein"
+    html_path = "data\\visualizations\\frankenstein_knowledge_graph.html"
+
+    kb = pipeline.process_text(text, db_path)
     
     # Select the arcs that connect important vertices
-    arc_query = "SELECT id FROM arcs WHERE arcs.start IN (SELECT id FROM vertices WHERE value == 100) OR arcs.end IN (SELECT id FROM vertices WHERE value == 100)"
-    pipeline.visualize(db_path, html_path, arc_query=arc_query)
+    pipeline.visualize(db_path, html_path)
     
     print("=" * 60)
     print("Pipeline completed successfully!")

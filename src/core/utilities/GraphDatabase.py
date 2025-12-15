@@ -143,11 +143,11 @@ class GraphDatabase:
 		
 	def get_vertices(self):
 		rec = self.__get_vertex_model()
-		return rec.get_object_list( f'id={self.id}')
+		return rec.get_object_list( f'graph_id={self.id}')
 
 	def get_arcs(self):
 		rec = self.__get_arc_model()
-		return rec.get_object_list( f'id={self.id}')
+		return rec.get_object_list( f'graph_id={self.id}')
 
 	def get_vertex_props(self, table="vertex_props")->ActiveRecord:
 		return self.__getitem__(table)
