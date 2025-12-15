@@ -7,6 +7,7 @@ from spacy.lang.en.stop_words import STOP_WORDS
 
 from cor.knowledge.Knowledge import Knowledge
 from nlp.preprocessing.TextCleaner import TextCleaner
+from nlp.preprocessing.CoreferenceResolver import CoreferenceResolver
 from nlp.extraction.SRLExtractor import SRLExtractor
 from nlp.visualization.GraphBuilder import GraphBuilder
 
@@ -14,15 +15,27 @@ from nlp.visualization.GraphBuilder import GraphBuilder
 class KnowledgePipeline:
     """Pipeline for extracting knowledge graphs from natural language text."""
     
-    def __init__(self, model_name: str = "en_core_web_sm"):
+    def __init__(self, model_name: str = "en_core_web_sm",
+                 enable_coref: bool = True,
+                 coref_strategy: str = 'replace'):
         """Initialize the pipeline.
         
         Args:
             model_name: spaCy model name to use
+            enable_coref: Whether to enable coreference resolution
+            coref_strategy: 'filter' to remove pronouns, 'replace' to substitute, 'none' to disable
         """
         self.cleaner = TextCleaner()
         self.extractor = SRLExtractor(model_name)
         self.nlp = self.extractor.nlp
+        self.enable_coref = enable_coref
+        self.coref_strategy = coref_strategy
+
+        # Initialize coreference resolver if enabled
+        if self.enable_coref:
+            self.coref_resolver = CoreferenceResolver(self.nlp)
+        else:
+            self.coref_resolver = None
     
     def process_text(self, text: str, 
                      db_name: str,
@@ -39,10 +52,19 @@ class KnowledgePipeline:
         Returns:
             Populated Knowledge database object
         """
-        # Step 1: Clean text
+        # Step 1: Clean text (with optional coreference resolution)
         if verbose:
             print("Cleaning text...")
-        cleaned_text = self.cleaner.clean(text)
+            if self.enable_coref:
+                print(f"  Coreference strategy: {self.coref_strategy}")
+        
+        
+        cleaned_text = self.cleaner.clean(
+            text, 
+            coref_resolver=self.coref_resolver,
+            coref_strategy=self.coref_strategy,
+            verbose=verbose
+        )
         
         # Step 2: Split into sentences
         if verbose:
@@ -56,7 +78,14 @@ class KnowledgePipeline:
         
         for sent in iterator:
             result = self.extractor.extract_primitives(sent.text)
-            srl_results.append(result)
+            
+            # Filter out pronouns from extraction if coref is enabled
+            if self.coref_resolver:
+                result = self._filter_pronouns_from_result(result)
+            
+            # Only add if result has meaningful content
+            if result['subjects'] or result['objects']:
+                srl_results.append(result)
         
         # Step 4: Save to database
         if verbose:
@@ -65,6 +94,29 @@ class KnowledgePipeline:
         
         return kb
     
+
+    def _filter_pronouns_from_result(self, result: Dict[str, List[str]]) -> Dict[str, List[str]]:
+        """Filter pronouns from SRL extraction results.
+        
+        Args:
+            result: SRL extraction result dictionary
+            
+        Returns:
+            Filtered result dictionary
+        """
+        filtered = {
+            'subjects': [s for s in result['subjects'] 
+                        if not self.coref_resolver.should_filter_entity(s)],
+            'verbs': result['verbs'],
+            'objects': [o for o in result['objects'] 
+                       if not self.coref_resolver.should_filter_entity(o)],
+            'anchors': result.get('anchors', []),
+            'indirect_objects': [io for io in result['indirect_objects'] 
+                               if not self.coref_resolver.should_filter_entity(io)]
+        }
+        return filtered
+
+
     def _save_to_database(self, srl_results: List[Dict[str, List[str]]],
                      db_name: str,
                      template: Optional[str],
@@ -163,6 +215,7 @@ class KnowledgePipeline:
 
         return kb
     
+
     def visualize(self, 
                   db_name: str,
                   output_file: str, 
