@@ -1,0 +1,69 @@
+
+# All vertices that has something
+select start from arcs where name like 'HAS%'
+
+
+# All vertices that is something
+select start from arcs where name = 'IS'
+
+# The vertices that have starting from it
+select vertices.id, vertices.name, t.links from vertices
+  inner join (
+  select max(arcs.start) as vertid , count(id) as links from arcs
+   group by arcs.start
+   order by links desc
+   limit 50) as t
+  on vertices.id=t.vertid
+ order by t.links desc
+
+
+# The vertices that have connections ending to it
+select vertices.id, vertices.name, t.links from vertices
+  inner join (
+  select max(arcs.end) as vertid , count(id) as links from arcs
+   group by arcs.end
+   order by links desc
+   limit 50) as t
+  on vertices.id=t.vertid
+ order by t.links desc
+
+
+
+# All vertices that have deductions
+select name from vertices where id IN (
+select start from arcs where name like 'HAS%'
+intersect
+select start from arcs where name = 'IS')
+
+
+# Things that can be described as inferences (this that IS of a kind and HAS something) 
+# Inferrable means: x IS y and x HAS z  ->  y HAX z 
+# here we select all the 'x'
+select name from vertices where id in (
+   select end from arcs where start IN
+    (select id from vertices where id IN (
+      select start from arcs where name like 'HAS%'
+      intersect
+      select start from arcs where name = 'IS')
+     )
+   )
+
+# Describe all inferred relations  (TODO - verify)
+# Inferrable means: x IS y and x HAS z  ->  y HAX z 
+SELECT
+  a.id              AS arc_id,
+  a.name            AS arc_name,
+  sv.name           AS start_name,
+  ev.name           AS end_name
+FROM arcs AS a
+LEFT JOIN vertices AS sv ON sv.id = a.start
+LEFT JOIN vertices AS ev ON ev.id = a.end
+WHERE a.id in (
+   select id from arcs where start IN
+    (select id from vertices where id IN (
+      select start from arcs where name like 'HAS%'
+      intersect
+      select start from arcs where name = 'IS')
+     )
+)
+ORDER BY a.id;
