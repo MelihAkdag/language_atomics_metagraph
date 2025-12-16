@@ -1,6 +1,6 @@
 """Semantic Role Labeling extraction for knowledge graph construction."""
 
-from typing import Dict, List
+from typing import Any, Dict, List
 import spacy
 
 class SRLExtractor:
@@ -29,8 +29,8 @@ class SRLExtractor:
         """
         self.nlp = spacy.load(model_name)
     
-    def extract_primitives(self, sentence: str) -> Dict[str, List[str]]:
-        """Extract semantic primitives from a sentence.
+    def extract_primitives(self, sentence: str) -> Dict[str, Any]:
+        """Extract semantic primitives as structured relations.
         
         Args:
             sentence: Input sentence to analyze
@@ -39,45 +39,62 @@ class SRLExtractor:
             Dictionary containing subjects, verbs, objects, anchors, and indirect_objects
         """
         doc = self.nlp(sentence)
-        subjects = []
-        verbs = []
-        objects = []
-        anchors = []
-        indirect_objects = []
+        
+        relations = []  # List of relation dictionaries
         
         for token in doc:
-            # Extract subjects
-            if "subj" in token.dep_:
-                subjects.append(token.text)
-            
-            # Extract verbs and handle HAS relationships specially
             if "VERB" in token.pos_:
                 verb_surrogate = self._get_verb_surrogate(token.lemma_)
-                verbs.append(verb_surrogate)
                 
-                # For HAS verbs, extract anchors and objects
+                # Extract subject for this verb
+                subjects = [child.text for child in token.children if "subj" in child.dep_]
+                
                 if verb_surrogate == "HAS":
+                    # Extract HAS relationship components together
                     anchor, obj = self._extract_has_components(token)
-                    if anchor:
-                        anchors.append(anchor)
-                    if obj:
-                        objects.append(obj)
-            
-            # Extract objects (for non-HAS verbs)
-            if "obj" in token.dep_ and "HAS" not in verbs:
-                objects.append(token.text)
-            
-            # Extract indirect objects (dative as "to her", "for him", etc.)
-            if "dative" in token.dep_:
-                indirect_objects.append(token.text)
+                    for subj in subjects:
+                        relations.append({
+                            'type': 'HAS',
+                            'subject': subj,
+                            'anchor': anchor,
+                            'object': obj
+                        })
+                
+                elif verb_surrogate == "IS":
+                    # Extract IS relationship
+                    objects = [child.text for child in token.children if "obj" in child.dep_ or "attr" in child.dep_]
+                    for subj in subjects:
+                        for obj in objects:
+                            relations.append({
+                                'type': 'IS',
+                                'subject': subj,
+                                'object': obj
+                            })
+                
+                else:
+                    # Other verbs
+                    objects = [child.text for child in token.children if "obj" in child.dep_]
+                    for subj in subjects:
+                        for obj in objects:
+                            relations.append({
+                                'type': 'ACTION',
+                                'subject': subj,
+                                'verb': verb_surrogate,
+                                'object': obj
+                            })
+                
+                # Handle indirect objects (dative)
+                indirect_objects = [child.text for child in token.children if "dative" in child.dep_]
+                for subj in subjects:
+                    for ind_obj in indirect_objects:
+                        relations.append({
+                            'type': 'TO',
+                            'subject': subj,
+                            'verb': verb_surrogate,
+                            'indirect_object': ind_obj
+                        })
         
-        return {
-            'subjects': subjects,
-            'verbs': verbs,
-            'objects': objects,
-            'anchors': anchors,
-            'indirect_objects': indirect_objects
-        }
+        return {'relations': relations}
     
     def _extract_has_components(self, verb_token) -> tuple:
         """Extract anchor and object from HAS relationships.

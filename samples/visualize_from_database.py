@@ -10,7 +10,7 @@ def main():
     pipeline = KnowledgePipeline()
     
     db_path = "data\\databases\\db_frankenstein"
-    html_path = "data\\visualizations\\frankenstein_knowledge_graph.html"
+    html_path = "data\\visualizations\\frankenstein_knowledge_graph_query_filtered.html"
 
     # Example arc_query to filter specific arcs (Filter arcs connected to important vertices)
     arc_query = """

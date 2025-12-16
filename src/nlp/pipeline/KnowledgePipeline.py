@@ -84,7 +84,7 @@ class KnowledgePipeline:
                 result = self._filter_pronouns_from_result(result)
             
             # Only add if result has meaningful content
-            if result['subjects'] or result['objects']:
+            if result.get('relations'):
                 srl_results.append(result)
         
         # Step 4: Save to database
@@ -95,32 +95,58 @@ class KnowledgePipeline:
         return kb
     
 
-    def _filter_pronouns_from_result(self, result: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    def _filter_pronouns_from_result(self, result: Dict[str, Any]) -> Dict[str, Any]:
         """Filter pronouns from SRL extraction results.
-        
+    
         Args:
             result: SRL extraction result dictionary
-            
+        
         Returns:
             Filtered result dictionary
         """
-        filtered = {
-            'subjects': [s for s in result['subjects'] 
-                        if not self.coref_resolver.should_filter_entity(s)],
-            'verbs': result['verbs'],
-            'objects': [o for o in result['objects'] 
-                       if not self.coref_resolver.should_filter_entity(o)],
-            'anchors': result.get('anchors', []),
-            'indirect_objects': [io for io in result['indirect_objects'] 
-                               if not self.coref_resolver.should_filter_entity(io)]
-        }
-        return filtered
+        filtered_relations = []
+    
+        for relation in result.get('relations', []):
+            # Filter based on relation type
+            if relation['type'] == 'IS':
+                # Skip if any component is None
+                if relation['subject'] is None or relation['object'] is None:
+                    continue
+                if (not self.coref_resolver.should_filter_entity(relation['subject']) and
+                    not self.coref_resolver.should_filter_entity(relation['object'])):
+                    filtered_relations.append(relation)
+        
+            elif relation['type'] == 'HAS':
+                # Skip if any component is None
+                if relation['subject'] is None or relation['anchor'] is None or relation['object'] is None:
+                    continue
+                if (not self.coref_resolver.should_filter_entity(relation['subject']) and
+                    not self.coref_resolver.should_filter_entity(relation['object'])):
+                    filtered_relations.append(relation)
+        
+            elif relation['type'] == 'TO':
+                # Skip if any component is None
+                if relation['subject'] is None or relation['indirect_object'] is None:
+                    continue
+                if (not self.coref_resolver.should_filter_entity(relation['subject']) and
+                    not self.coref_resolver.should_filter_entity(relation['indirect_object'])):
+                    filtered_relations.append(relation)
+        
+            elif relation['type'] == 'ACTION':
+                # Skip if any component is None
+                if relation['subject'] is None or relation['object'] is None:
+                    continue
+                if (not self.coref_resolver.should_filter_entity(relation['subject']) and
+                    not self.coref_resolver.should_filter_entity(relation['object'])):
+                    filtered_relations.append(relation)
+    
+        return {'relations': filtered_relations}
 
 
-    def _save_to_database(self, srl_results: List[Dict[str, List[str]]],
-                     db_name: str,
-                     template: Optional[str],
-                     verbose: bool) -> Knowledge:
+    def _save_to_database(self, srl_results: List[Dict[str, Any]],
+                 db_name: str,
+                 template: Optional[str],
+                 verbose: bool) -> Knowledge:
         """Save SRL results to knowledge database.
 
         Args:
@@ -138,80 +164,87 @@ class KnowledgePipeline:
         iterator = tqdm(srl_results, desc="Saving to DB", unit="result") if verbose else srl_results
 
         for result in iterator:
-            subjects = result['subjects']
-            verbs = result['verbs']
-            objects = result['objects']
-            anchors = result.get('anchors', [])
-            indirect_objects = result['indirect_objects']
+            for relation in result.get('relations', []):
+                rel_type = relation['type']
 
-            for subject in subjects:
-                subject = subject.lower()
-                for i, verb in enumerate(verbs):
-                    # Direct objects
-                    for j, obj in enumerate(objects):
-                        obj = obj.lower()
-                        if verb == "IS":
-                            say.IS(subject, obj)
-                            # Get or create vertices and assign values
-                            if subject not in STOP_WORDS:
-                                subject_vertex = kb.graph.get_vertex_by_name(subject, auto_add=False)
-                                if subject_vertex:
-                                    subject_vertex.set_value(100)
-                            if obj not in STOP_WORDS:
-                                obj_vertex = kb.graph.get_vertex_by_name(obj, auto_add=False)
-                                if obj_vertex:
-                                    obj_vertex.set_value(100)
+                if rel_type == 'IS':
+                    subject = relation.get('subject')
+                    obj = relation.get('object')
+                    # Skip if any component is None
+                    if subject is None or obj is None:
+                        continue
+                    subject = subject.lower()
+                    obj = obj.lower()
+                    say.IS(subject, obj)
+                    # Get or create vertices and assign values
+                    if subject not in STOP_WORDS:
+                        subject_vertex = kb.graph.get_vertex_by_name(subject, auto_add=False)
+                        if subject_vertex:
+                            subject_vertex.set_value(100)
+                    if obj not in STOP_WORDS:
+                        obj_vertex = kb.graph.get_vertex_by_name(obj, auto_add=False)
+                        if obj_vertex:
+                            obj_vertex.set_value(100)
 
-                        elif verb == "HAS":
-                            # Use corresponding anchor if available
-                            anchor = anchors[j] if j < len(anchors) else "property"
-                            anchor = anchor.lower()
-                            say.HAS(subject, anchor, obj)
-                            # Get or create vertices and assign values
-                            if subject not in STOP_WORDS:
-                                subject_vertex = kb.graph.get_vertex_by_name(subject, auto_add=False)
-                                if subject_vertex:
-                                    subject_vertex.set_value(100)
-                            if anchor not in STOP_WORDS:
-                                anchor_vertex = kb.graph.get_vertex_by_name(anchor, auto_add=False)
-                                if anchor_vertex:
-                                    anchor_vertex.set_value(100)
-                            if obj not in STOP_WORDS:
-                                obj_vertex = kb.graph.get_vertex_by_name(obj, auto_add=False)
-                                if obj_vertex:
-                                    obj_vertex.set_value(100)
+                elif rel_type == 'HAS':
+                    subject = relation.get('subject')
+                    anchor = relation.get('anchor')
+                    obj = relation.get('object')
+                    # Skip if any component is None
+                    if subject is None or anchor is None or obj is None:
+                        continue
+                    subject = subject.lower()
+                    anchor = anchor.lower()
+                    obj = obj.lower()
+                    say.HAS(subject, anchor, obj)
+                    # Get or create vertices and assign values
+                    if subject not in STOP_WORDS:
+                        subject_vertex = kb.graph.get_vertex_by_name(subject, auto_add=False)
+                        if subject_vertex:
+                            subject_vertex.set_value(100)
+                    if anchor not in STOP_WORDS:
+                        anchor_vertex = kb.graph.get_vertex_by_name(anchor, auto_add=False)
+                        if anchor_vertex:
+                            anchor_vertex.set_value(100)
+                    if obj not in STOP_WORDS:
+                        obj_vertex = kb.graph.get_vertex_by_name(obj, auto_add=False)
+                        if obj_vertex:
+                            obj_vertex.set_value(100)
 
-                    # Indirect objects
-                    for ind_obj in indirect_objects:
-                        ind_obj = ind_obj.lower()
-                        if verb == "IS":
-                            say.IS(subject, ind_obj)
-                            # Get or create vertices and assign values
-                            if subject not in STOP_WORDS:
-                                subject_vertex = kb.graph.get_vertex_by_name(subject, auto_add=False)
-                                if subject_vertex:
-                                    subject_vertex.set_value(100)
-                            if ind_obj not in STOP_WORDS:
-                                ind_obj_vertex = kb.graph.get_vertex_by_name(ind_obj, auto_add=False)
-                                if ind_obj_vertex:
-                                    ind_obj_vertex.set_value(100)
-                        elif verb == "HAS":
-                            # For indirect objects, use generic anchor
-                            anchor = "property"
-                            say.HAS(subject, anchor, ind_obj)
-                            # Get or create vertices and assign values
-                            if subject not in STOP_WORDS:
-                                subject_vertex = kb.graph.get_vertex_by_name(subject, auto_add=False)
-                                if subject_vertex:
-                                    subject_vertex.set_value(100)
-                            if anchor not in STOP_WORDS:
-                                anchor_vertex = kb.graph.get_vertex_by_name(anchor, auto_add=False)
-                                if anchor_vertex:
-                                    anchor_vertex.set_value(100)
-                            if ind_obj not in STOP_WORDS:
-                                ind_obj_vertex = kb.graph.get_vertex_by_name(ind_obj, auto_add=False)
-                                if ind_obj_vertex:
-                                    ind_obj_vertex.set_value(100)
+                elif rel_type == 'TO':
+                    subject = relation.get('subject')
+                    verb = relation.get('verb')
+                    ind_obj = relation.get('indirect_object')
+                    # Skip if any component is None
+                    if subject is None or ind_obj is None:
+                        continue
+                    subject = subject.lower()
+                    ind_obj = ind_obj.lower()
+                
+                    if verb == "IS":
+                        # For IS verbs, treat indirect object as a direct IS relationship
+                        say.IS(subject, ind_obj)
+                        # Set values
+                        if subject not in STOP_WORDS:
+                            subject_vertex = kb.graph.get_vertex_by_name(subject, auto_add=False)
+                            if subject_vertex:
+                                subject_vertex.set_value(100)
+                        if ind_obj not in STOP_WORDS:
+                            ind_obj_vertex = kb.graph.get_vertex_by_name(ind_obj, auto_add=False)
+                            if ind_obj_vertex:
+                                ind_obj_vertex.set_value(100)
+                    else:
+                        # For other verbs, use TO primitive
+                        say.TO(ind_obj, subject, verb)
+                        # Set values
+                        if subject not in STOP_WORDS:
+                            subject_vertex = kb.graph.get_vertex_by_name(subject, auto_add=False)
+                            if subject_vertex:
+                                subject_vertex.set_value(100)
+                        if ind_obj not in STOP_WORDS:
+                            ind_obj_vertex = kb.graph.get_vertex_by_name(ind_obj, auto_add=False)
+                            if ind_obj_vertex:
+                                ind_obj_vertex.set_value(100)
 
         return kb
     
