@@ -46,7 +46,7 @@ class CoreferenceResolver:
         """
         self.nlp = nlp
         self.entity_memory = []  # Track recent entities
-        self.memory_size = 5  # How many recent entities to remember
+        self.memory_size = 10  # How many recent entities to remember
     
     def resolve_text(self, text: str, strategy: str = 'filter', verbose: bool = False) -> str:
         """Resolve pronouns in text.
