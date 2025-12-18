@@ -20,6 +20,8 @@ class SRLExtractor:
         "comprise", "comprises", "comprised",
         "take", "takes", "took",
         "receive", "receives", "received",
+        "earn", "earns", "earned",
+        "get", "gets", "got",
         "carry", "carries", "carried",
         "hold", "holds", "held"
     }

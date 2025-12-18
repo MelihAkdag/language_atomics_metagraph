@@ -17,17 +17,6 @@ class CoreferenceResolver:
         'it', 'its', 'itself'
     }
     
-    DEMONSTRATIVE_PRONOUNS = {
-        'this', 'that', 'these', 'those'
-    }
-    
-    RELATIVE_PRONOUNS = {
-        'which', 'who', 'whom', 'whose', 'that'  # 'that' when used as relative pronoun
-    }
-    
-    INTERROGATIVE_PRONOUNS = {
-        'what', 'where', 'when', 'why', 'how', 'whose', 'which', 'who', 'whom'
-    }
     
     FIRST_SECOND_PERSON = {
         'i', 'me', 'my', 'mine', 'myself',
@@ -35,8 +24,7 @@ class CoreferenceResolver:
         'you', 'your', 'yours', 'yourself', 'yourselves'
     }
     
-    ALL_PRONOUNS = (PERSONAL_PRONOUNS | DEMONSTRATIVE_PRONOUNS | RELATIVE_PRONOUNS |
-                    INTERROGATIVE_PRONOUNS | FIRST_SECOND_PERSON)
+    ALL_PRONOUNS = PERSONAL_PRONOUNS | FIRST_SECOND_PERSON
     
     def __init__(self, nlp):
         """Initialize resolver with spaCy model.
@@ -94,49 +82,47 @@ class CoreferenceResolver:
         return ' '.join(filtered_sentences)
     
     def _replace_pronouns(self, doc: Doc, verbose: bool = False) -> str:
-        """Replace pronouns with their likely antecedents.
-        
-        Args:
-            doc: spaCy Doc object
-            verbose: Whether to show progress
-            
-        Returns:
-            Text with pronouns replaced
-        """
+        """Replace pronouns with their likely antecedents (KG-safe)."""
         replacements = {}
         self.entity_memory = []
 
         sentences = list(doc.sents)
         iterator = tqdm(sentences, desc="Resolving pronouns", unit="sent") if verbose else sentences
-    
+
         for sent in iterator:
-            # Update entity memory with named entities in this sentence
-            for ent in sent.ents:
-                if ent.label_ in ['PERSON', 'ORG', 'GPE', 'PRODUCT', 'EVENT']:
-                    self._add_to_memory(ent.text, ent.label_)
-            
-            # Update with noun chunks that might be subjects
-            for chunk in sent.noun_chunks:
-                if chunk.root.dep_ in ['nsubj', 'nsubjpass']:
-                    if chunk.text.lower() not in self.ALL_PRONOUNS:
-                        self._add_to_memory(chunk.text, 'NOUN')
-            
-            # Find pronouns and map to antecedents
+            # 1) Resolve pronouns using ONLY previous memory
             for token in sent:
-                if token.text.lower() in self.ALL_PRONOUNS:
+                t = token.text.lower()
+
+                # skip first/second person and anything non-personal
+                if t in self.FIRST_SECOND_PERSON:
+                    continue
+
+                if t in self.PERSONAL_PRONOUNS:
                     antecedent = self._find_antecedent(token)
                     if antecedent:
                         replacements[token.i] = antecedent
-        
-        # Build new text with replacements
+
+            # 2) AFTER resolving, update memory with entities from this sentence
+            for ent in sent.ents:
+                if ent.label_ in {'PERSON', 'ORG', 'GPE', 'PRODUCT', 'EVENT'}:
+                    self._add_to_memory(ent.text, ent.label_)
+
+            for chunk in sent.noun_chunks:
+                if chunk.root.dep_ in {'nsubj', 'nsubjpass'}:
+                    if chunk.text.lower() not in self.PERSONAL_PRONOUNS:
+                        self._add_to_memory(chunk.text, 'NOUN')
+
+        # reconstruct text
         new_tokens = []
         for token in doc:
             if token.i in replacements:
                 new_tokens.append(replacements[token.i])
             else:
                 new_tokens.append(token.text)
-        
+
         return self._reconstruct_text(doc, new_tokens)
+
     
     def _add_to_memory(self, entity: str, label: str):
         """Add entity to memory buffer.
@@ -155,34 +141,33 @@ class CoreferenceResolver:
             self.entity_memory.pop(0)
     
     def _find_antecedent(self, pronoun_token) -> Optional[str]:
-        """Find the most likely antecedent for a pronoun.
-        
-        Args:
-            pronoun_token: The pronoun token
-            
-        Returns:
-            Antecedent text or None
-        """
         if not self.entity_memory:
             return None
-        
+    
         pronoun = pronoun_token.text.lower()
-        
-        # Match based on number (singular vs plural)
-        if pronoun in ['they', 'them', 'their', 'theirs', 'themselves']:
-            # Prefer plural entities (organizations, groups)
+    
+        # plural pronouns
+        if pronoun in {'they', 'them', 'their', 'theirs', 'themselves'}:
             for entry in reversed(self.entity_memory):
-                if entry['label'] in ['ORG', 'PRODUCT', 'EVENT']:
+                if entry['label'] in {'ORG', 'EVENT'}:
                     return entry['text']
-        
-        # For singular pronouns, prefer person entities
-        if pronoun in ['he', 'him', 'his', 'himself', 'she', 'her', 'hers', 'herself']:
+            return None  # do NOT guess
+    
+        # singular personal pronouns
+        if pronoun in {'he', 'him', 'his', 'himself', 'she', 'her', 'hers', 'herself'}:
             for entry in reversed(self.entity_memory):
                 if entry['label'] == 'PERSON':
                     return entry['text']
-        
-        # Default: return most recent entity
-        return self.entity_memory[-1]['text'] if self.entity_memory else None
+            return None
+    
+        # neuter pronouns
+        if pronoun in {'it', 'its', 'itself'}:
+            for entry in reversed(self.entity_memory):
+                if entry['label'] in {'ORG', 'PRODUCT', 'EVENT', 'NOUN'}:
+                    return entry['text']
+    
+        return None
+
     
     def _reconstruct_text(self, doc: Doc, tokens: List[str]) -> str:
         """Reconstruct text from tokens preserving spacing.
