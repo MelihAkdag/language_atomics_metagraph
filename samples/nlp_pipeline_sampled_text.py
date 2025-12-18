@@ -10,7 +10,7 @@ from nlp.pipeline.KnowledgePipeline import KnowledgePipeline
 def main():
     """Run the complete NLP pipeline on sample text."""
     # Initialize pipeline
-    pipeline = KnowledgePipeline()
+    pipeline = KnowledgePipeline(enable_coref=False, coref_strategy="replace")
     
     # Load text from data/raw
     text_path = "data\\raw\\sampled_text.txt"
