@@ -33,7 +33,7 @@ class CoreferenceResolver:
         """
         self.nlp = nlp
         self.entity_memory = []  # Track recent entities
-        self.memory_size = 10  # How many recent entities to remember
+        self.memory_size = 50  # How many recent entities to remember
     
     def resolve_text(self, text: str, strategy: str = 'filter', verbose: bool = False) -> str:
         """Resolve pronouns in text.
@@ -89,7 +89,7 @@ class CoreferenceResolver:
         iterator = tqdm(sentences, desc="Resolving pronouns", unit="sent") if verbose else sentences
 
         for sent in iterator:
-            # 1) Resolve pronouns using ONLY previous memory
+            # Resolve pronouns using ONLY previous memory
             for token in sent:
                 t = token.text.lower()
 
@@ -101,8 +101,8 @@ class CoreferenceResolver:
                     antecedent = self._find_antecedent(token)
                     if antecedent:
                         replacements[token.i] = antecedent
-
-            # 2) AFTER resolving, update memory with entities from this sentence
+            
+            # Update memory with entities from this sentence
             for ent in sent.ents:
                 if ent.label_ in {'PERSON', 'ORG', 'GPE', 'PRODUCT', 'EVENT'}:
                     self._add_to_memory(ent.text, ent.label_)
@@ -111,7 +111,7 @@ class CoreferenceResolver:
                 if chunk.root.dep_ in {'nsubj', 'nsubjpass'}:
                     if chunk.text.lower() not in self.PERSONAL_PRONOUNS:
                         self._add_to_memory(chunk.text, 'NOUN')
-
+            
         # reconstruct text
         new_tokens = []
         for token in doc:
@@ -155,7 +155,7 @@ class CoreferenceResolver:
         # singular personal pronouns
         if pronoun in {'he', 'him', 'his', 'himself', 'she', 'her', 'hers', 'herself'}:
             for entry in reversed(self.entity_memory):
-                if entry['label'] == 'PERSON':
+                if entry['label'] in {'PERSON', 'NOUN'}:
                     return entry['text']
             return None
     

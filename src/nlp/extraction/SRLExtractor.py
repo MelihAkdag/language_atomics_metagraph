@@ -31,6 +31,8 @@ class SRLExtractor:
         "relate", "relates", "related",
         "associate", "associates", "associated"
         }
+    
+    INVERSE_PREPS = {"in", "at", "from", "of", "on", "under", "above", "below", "near"} # these will be used to create HAS_INVERSE anchors
 
     REL_PRONOUNS = {"that", "which", "who", "whom", "whose"}
 
@@ -280,6 +282,25 @@ class SRLExtractor:
 
         return quantifiers
 
+    def _get_possessives(self, sent):
+        """
+        Extract possessive relationships (e.g., "her colleague" -> she HAS colleague).
+
+        Returns:
+            Dict mapping possessed noun -> possessor token
+            e.g., {colleague_token: her_token}
+        """
+        possessives = {}
+
+        for token in sent:
+            # Check for possessive determiners (her, his, their, my, your, our, its)
+            if token.dep_ == "poss" and token.pos_ in {"PRON", "DET"}:
+                head = token.head
+                possessives[head] = token
+
+        return possessives
+
+
     def _get_prep_pobj_pairs(self, sent, objects=None):
         objects = set(objects or [])
         pairs = []
@@ -309,13 +330,15 @@ class SRLExtractor:
             prep_pobj_pairs: list of (prep, pobj_text) tuples
 
         Returns:
-            List of anchors as strings or tuples
-            e.g., ["advanced equipment", "three microscopes"]
+            Tuple of (anchors, inverse_relations)
+            - anchors: List of anchor dicts for attributes/quantifiers
+            - inverse_relations: List of (prep, pobj) tuples that should become HAS_INVERSE
         """
         anchors = []
         quantifiers = quantifiers or {}
         attributes = attributes or {}
         prep_pobj_pairs = prep_pobj_pairs or []
+        inverse_relations = []
 
         # 1) Define attributes and quantifiers as anchor for objects
         for head, quants in quantifiers.items():
@@ -331,12 +354,15 @@ class SRLExtractor:
         # 2) Anchors from prepositional object pairs
         for obj in objects:
             for prep, pobj in prep_pobj_pairs:
-                # optionally skip if pobj already in objects
                 if pobj not in [o.text if not isinstance(o, str) else o for o in objects]:
-                    anchors.append({obj.text: f"{prep.text} {pobj.text}"})
+                    # Check if this preposition indicates an inverse relationship
+                    if prep.text.lower() in self.INVERSE_PREPS:
+                        inverse_relations.append((prep.text.lower(), pobj.text.lower(), obj.text.lower()))
+                    else:
+                        # Keep as anchor for non-inverse preps
+                        anchors.append({obj.text: f"{prep.text} {pobj.text}"})
 
-        return anchors
-
+        return anchors, inverse_relations
 
 
     def extract_primitives(self, sentence: str):
@@ -383,13 +409,45 @@ class SRLExtractor:
 
                 subjects = enriched_subjects
 
-                anchors = self._prepare_anchors(
+                anchors, inverse_relations = self._prepare_anchors(
                     objects=objects,
                     quantifiers=quants,
                     attributes=attrs,
                     prep_pobj_pairs=prep_pobj_pairs
                 )
 
+                possessives = self._get_possessives(tokens) # To catch possessive relationships such as "her colleague ..."
+
+                # Extract possessive relationships and add to results
+                possessive_relations = []
+                for possessed_noun, possessor in possessives.items():
+                    possessor_text = self._resolve_possessive_to_subject(possessor.text.lower())
+
+                    # Get the full noun phrase including appositives
+                    possessed_items = [possessed_noun]
+                    if possessed_noun in appositives:
+                        possessed_items.extend(appositives[possessed_noun])
+
+                    # Add each possessive relationship
+                    for item in possessed_items:
+                        possessive_relations.append({
+                            "subject": possessor_text,
+                            "object": item.text.lower()
+                        })
+
+                subjects = [s.text.lower() for s in subjects]
+                objects = [o.text.lower() for o in objects]
+                
+                result = {
+                    "subjects": subjects,
+                    "verbs": verb,
+                    "objects": objects,
+                    "anchors": anchors,
+                    "inverse_relations": inverse_relations,
+                    "possessive_relations": possessive_relations
+                }
+                results.append(result)
+                
                 #print("-----")
                 #print("\nCLAUSE:", " ".join(t.text for t in tokens))
                 #print("-----")
@@ -400,19 +458,9 @@ class SRLExtractor:
                 #print("  ATTRIBUTES:", attrs)
                 #print("  PREP-POBJ PAIRS:", prep_pobj_pairs)
                 #print("  ANCHORS (for HAS):", anchors if verb == "HAS" else "N/A")
+                #print("  INVERSE RELATIONS (for HAS_INVERSE):", inverse_relations if verb == "HAS_INVERSE" else "N/A")
+                #print("  POSSESSIVE RELATIONS:", possessive_relations)
                 #print("-----")
-
-                subjects = [s.text.lower() for s in subjects]
-                objects = [o.text.lower() for o in objects]
-                #anchors = [a for a in anchors] if verb == "HAS" else []
-
-                result = {
-                    "subjects": subjects,
-                    "verbs": verb,
-                    "objects": objects,
-                    "anchors": anchors
-                }
-                results.append(result)
             #exit()
         return results
 
@@ -433,7 +481,19 @@ class SRLExtractor:
             return "HAS_INVERSE"
         else:
             return lemma
-        
+    
+    def _resolve_possessive_to_subject(self, possessive: str) -> str:
+        """Convert possessive pronouns to subject form."""
+        mapping = {
+            "my": "i",
+            "your": "you",
+            "his": "he",
+            "her": "she",
+            "its": "it",
+            "our": "we",
+            "their": "they"
+        }
+        return mapping.get(possessive, possessive)
 
 
             

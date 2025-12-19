@@ -116,6 +116,8 @@ class KnowledgePipeline:
             verb = result['verbs']
             objects = result['objects']
             anchors = result.get('anchors', [])
+            inverse_relations = result.get('inverse_relations', [])
+            possessive_relations = result.get('possessive_relations', [])
 
             for subject in subjects:
                 for obj in objects:
@@ -137,6 +139,15 @@ class KnowledgePipeline:
                                     say.HAS(key, value, subject)
                         else:
                             say.HAS(obj, "HAS", subject)
+            
+            # Handle inverse relations from prepositions
+            for prep, pobj, obj in inverse_relations:
+                # boston -> HAS -> laboratory (for "laboratory in Boston")
+                say.HAS(pobj, prep, obj)
+            
+            # Handle possessive relations
+            for poss_rel in possessive_relations:
+                say.HAS(poss_rel["subject"], "HAS", poss_rel["object"])
         
         
                         ## Get or create vertices and assign values
