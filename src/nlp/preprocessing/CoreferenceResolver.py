@@ -1,8 +1,7 @@
 """Pronoun and reference resolution for knowledge graphs."""
 
-from typing import Dict, List, Optional, Set
-import spacy
-from spacy.tokens import Doc, Span
+from typing import List, Optional
+from spacy.tokens import Doc
 from tqdm import tqdm
 
 

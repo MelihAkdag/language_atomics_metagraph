@@ -26,6 +26,12 @@ class SRLExtractor:
         "hold", "holds", "held"
     }
 
+    ATTRIBUTION_VERBS_INVERSE = {
+        "belong", "belongs", "belonged",
+        "relate", "relates", "related",
+        "associate", "associates", "associated"
+        }
+
     REL_PRONOUNS = {"that", "which", "who", "whom", "whose"}
 
     CORE_PREPS = {"to", "for", "with", "onto", "into"}  # prepositions that often mark objects
@@ -137,6 +143,28 @@ class SRLExtractor:
                 return out
 
         return []
+
+
+    def _get_appositives(self, sent):
+        """
+        Extract appositive relationships (e.g., "Her colleague, Bob").
+
+        Returns:
+            Dict mapping head noun -> list of appositive tokens
+            e.g., {colleague_token: [Bob_token]}
+        """
+        appositives = {}
+
+        for token in sent:
+            if token.dep_ == "appos":
+                head = token.head
+                appositives.setdefault(head, []).append(token)
+
+                # Handle coordinated appositives: "my friends, Alice and Bob"
+                for conj in token.conjuncts:
+                    appositives[head].append(conj)
+
+        return appositives
 
 
     def _get_objects(self, sent):
@@ -344,6 +372,17 @@ class SRLExtractor:
                 subjects = self._get_subjects(tokens)
                 subjects = [self._resolve_relative_pronoun(tokens, s) for s in subjects]
 
+                appositives = self._get_appositives(tokens) # To catch subjects such as "My friend, Sreekant ..."
+
+                # Enrich subjects with their appositives
+                enriched_subjects = []
+                for subj in subjects:
+                    enriched_subjects.append(subj)
+                    if subj in appositives:
+                        enriched_subjects.extend(appositives[subj])
+
+                subjects = enriched_subjects
+
                 anchors = self._prepare_anchors(
                     objects=objects,
                     quantifiers=quants,
@@ -356,7 +395,7 @@ class SRLExtractor:
                 #print("-----")
                 #print("  SUBJECT:", subjects)
                 #print("  VERB:", verb)
-                #print("  OBJECT:", obj)
+                #print("  OBJECT:", objects)
                 #print("  QUANTIFIERS:", quants)
                 #print("  ATTRIBUTES:", attrs)
                 #print("  PREP-POBJ PAIRS:", prep_pobj_pairs)
@@ -374,6 +413,7 @@ class SRLExtractor:
                     "anchors": anchors
                 }
                 results.append(result)
+            #exit()
         return results
 
 
@@ -389,6 +429,8 @@ class SRLExtractor:
             return "IS"
         elif lemma in {v.lower() for v in self.ATTRIBUTION_VERBS}:
             return "HAS"
+        elif lemma in {v.lower() for v in self.ATTRIBUTION_VERBS_INVERSE}:
+            return "HAS_INVERSE"
         else:
             return lemma
         

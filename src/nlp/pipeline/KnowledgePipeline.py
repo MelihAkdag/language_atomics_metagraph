@@ -79,10 +79,6 @@ class KnowledgePipeline:
         for sent in iterator:
             results = self.extractor.extract_primitives(sent.text)
             for result in results:
-                # Filter out pronouns from extraction if coref is enabled
-                if self.coref_resolver:
-                    result = self._filter_pronouns_from_result(result)
-            
                 # Only add if result has meaningful content
                 if result['subjects'] or result['objects']:
                     srl_results.append(result)
@@ -93,26 +89,6 @@ class KnowledgePipeline:
         kb = self._save_to_database(srl_results, db_name, template, verbose)
         
         return kb
-    
-
-    def _filter_pronouns_from_result(self, result: Dict[str, List[str]]) -> Dict[str, List[str]]:
-        """Filter pronouns from SRL extraction results.
-        
-        Args:
-            result: SRL extraction result dictionary
-            
-        Returns:
-            Filtered result dictionary
-        """
-        filtered = {
-            'subjects': [s for s in result['subjects'] 
-                        if not self.coref_resolver.should_filter_entity(s)],
-            'verbs': result['verbs'],
-            'objects': [o for o in result['objects'] 
-                       if not self.coref_resolver.should_filter_entity(o)],
-            'anchors': result.get('anchors', [])
-        }
-        return filtered
 
 
     def _save_to_database(self, srl_results: List[Dict[str, List[str]]],
@@ -149,10 +125,18 @@ class KnowledgePipeline:
                         # Use corresponding anchor if available
                         if len(anchors) >= 1:
                             for anchor in anchors:
-                                for key, value in anchor.items():
+                                for key, value in anchor.items():   # key=object, value=anchor attribute
                                     say.HAS(subject, value, key)
                         else:
-                            say.HAS(subject, "has", obj)
+                            say.HAS(subject, "HAS", obj)
+                    elif verb == "HAS_INVERSE":
+                        # Use corresponding anchor if available
+                        if len(anchors) >= 1:
+                            for anchor in anchors:
+                                for key, value in anchor.items():   # key=object, value=anchor attribute
+                                    say.HAS(key, value, subject)
+                        else:
+                            say.HAS(obj, "HAS", subject)
         
         
                         ## Get or create vertices and assign values
