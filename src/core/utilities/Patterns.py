@@ -2,6 +2,22 @@
 # Filename: Patterns.py
 # Description: A collection of generic design patterns, mostly from the 'Gang of Four' book.
 
+from abc import ABC, abstractmethod
+
+class Action(ABC):
+	def __init__(self):
+		""" Constructor
+		"""
+		return
+	
+	@abstractmethod
+	def execute( self, ctxt ):
+		""" Overridable method to execute an action
+		Arguments
+			ctxt -- Command context
+		"""
+		pass
+
 
 class GenericManager:
 	def __init__(self):
@@ -271,41 +287,41 @@ class Flyweight(Manager):
 		raise Exception( "Override create_flyweight." )
 
 class ChainOfResponsibility:
-	def __init__(self):
+	def __init__(self, action:Action=None):
 		""" Constructor
 		Arguments
 			"""
 		self.next	= None
+		self.action	= action
 		return
 
-	def run(self):
+	def run(self, ctxt=None):
 		""" Runs the chain (or pipeline)
 		Arguments
+			ctxt -- Command context
 			"""
-		self.execute()
-		if self.next is not None:
-			self.next.run()
-		return
+		
+		result	= None
+		if self.action is not None:
+			result	= self.action.execute(ctxt)
 
-	def set_next( self, nextcmd ):
+		if self.next is not None:
+			self.next.run(ctxt)
+		return result
+
+	def append( self, nextcmd:Action ):
 		""" Adds a new command to the chain
 		Arguments
 			nextcmd -- The command following this command
 		"""
-		self.next = nextcmd
-		return nextcmd
-
-	def get_next(self):
-		""" Returns the next command.
-		Arguments
-			"""
+		self.next = ChainOfResponsibility(nextcmd)
 		return self.next
 
-	def execute(self):
-		""" Overridable function that is the concrete execution of the command
-		Arguments
-			"""
-		raise Exception( "Override Execute." )
+	def __enter__(self):
+		return self
+
+	def __exit__(self, a, b, c):
+		return self
 
 
 	@staticmethod
@@ -314,7 +330,7 @@ class ChainOfResponsibility:
 		Arguments
 			cmdseq -- An array of commands to link into a pipeline
 		"""
-		pipeline	= None
+		pipeline = None
 
 		# Construct the pipeline
 		last	= None
@@ -322,13 +338,12 @@ class ChainOfResponsibility:
 			if pipeline == None:
 				# If this is the front of the pipeline,
 				# simply add the first command
-				pipeline	= cmd
+				pipeline	= ChainOfResponsibility(cmd)
+				last		= pipeline
 			else:
 				# If this is not the front of the pipeline
 				# append the current command to the last command
-				last.SetNext( cmd )
-
-			last			= cmd
+				last		= last.append( cmd )
 
 		return pipeline
 
