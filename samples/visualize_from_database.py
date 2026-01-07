@@ -10,18 +10,20 @@ def main():
     pipeline = KnowledgePipeline()
     
     db_path = "data\\databases\\db_frankenstein"
-    html_path = "data\\visualizations\\frankenstein_knowledge_graph.html"
+    html_path = "data\\visualizations\\frankenstein_knowledge_graph_query_filtered.html"
 
     # Example arc_query to filter specific arcs (Filter arcs connected to important vertices)
     arc_query = """
-        SELECT *
+        SELECT id
         FROM arcs
         WHERE start IN (
-            SELECT id FROM vertices WHERE value=100
+            SELECT id FROM vertices 
+            WHERE name IN ('elizabeth', 'victor', 'frankenstein', 'creature', 'mother', 'father')
         )
         OR end IN (
-            SELECT id FROM vertices WHERE value=100
-    );
+            SELECT id FROM vertices 
+            WHERE name IN ('elizabeth', 'victor', 'frankenstein', 'creature', 'mother', 'father')
+        )
     """
 
     pipeline.visualize(db_name=db_path, output_file=html_path, arc_query=arc_query) 
