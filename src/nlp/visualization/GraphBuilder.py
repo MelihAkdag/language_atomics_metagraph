@@ -1,129 +1,133 @@
-"""Graph visualization utilities for knowledge graphs."""
-
 import os
+from typing import Any, Optional
+
 import networkx as nx
 from pyvis.network import Network
-from typing import Dict, Any, Optional
 
 from cor.knowledge.Knowledge import Knowledge
 
 
+def _get_field(obj: Any, field: str, default=None):
+    """
+    Robustly read a field from either:
+    - dict-like objects
+    - MultiTableActiveObject objects (Vertex/Arc) via __getitem__
+    - objects exposing get_<field>() methods
+    - objects exposing plain attributes
+    """
+    if obj is None:
+        return default
+
+    if isinstance(obj, dict):
+        return obj.get(field, default)
+
+    # MultiTableActiveObject supports obj[field]
+    try:
+        return obj[field]
+    except Exception:
+        pass
+
+    getter = getattr(obj, f"get_{field}", None)
+    if callable(getter):
+        try:
+            return getter()
+        except Exception:
+            return default
+
+    return getattr(obj, field, default)
+
+
 class GraphBuilder:
     """Builds and visualizes knowledge graphs."""
-    
+
     @staticmethod
     def build_from_database(db_name: str) -> nx.DiGraph:
-        """Build NetworkX graph from knowledge database.
-        
-        Args:
-            db_name: Name/path of the knowledge database
-            
-        Returns:
-            NetworkX directed graph
-        """
-        G = nx.DiGraph()
+        """Build NetworkX graph from knowledge database."""
+        graph_nx = nx.DiGraph()
         kb = Knowledge(db_name)
-        
-        # Add nodes
-        nodemap = {}
-        for vid in kb.graph.get_vertices():
-            name = kb.graph.get_vertex(vid)['name']
-            nodemap[vid] = name
-            G.add_node(vid, label=nodemap[vid])
-        
-        # Add edges
-        edgemap = {}
-        for eid in kb.graph.get_arcs():
-            arc = kb.graph.get_arc(eid)
-            start = arc['start']
-            end = arc['end']
-            name = arc['name']
-            edgemap[(start, end)] = name
-            G.add_edge(start, end, label=name)
-        
-        return G
-    
+
+        # Nodes
+        for vertex_id in kb.graph.get_vertices():
+            vertex = kb.graph.get_vertex(vertex_id)
+            name = _get_field(vertex, "name")
+            value = _get_field(vertex, "value")
+            graph_nx.add_node(vertex_id, label=name, value=value)
+
+        # Edges
+        for arc_id in kb.graph.get_arcs():
+            arc = kb.graph.get_arc(arc_id)
+            start = _get_field(arc, "start")
+            end = _get_field(arc, "end")
+            label = _get_field(arc, "name")
+            graph_nx.add_edge(start, end, label=label)
+
+        return graph_nx
 
     @staticmethod
-    def build_from_query(db_name: str, 
-                        vertex_query: Optional[str] = None,
-                        arc_query: Optional[str] = None) -> nx.DiGraph:
-        """Build NetworkX graph from custom SQL queries.
-        
-        Args:
-            db_name: Name/path of the knowledge database
-            vertex_query: SQL query for vertices (must return 'id' column)
-            arc_query: SQL query for arcs (must return 'id' column)
-            
-        Returns:
-            NetworkX directed graph
-            
-        Example:
-            # Get only subjects (value=1) and their connections
-            graph = GraphBuilder.build_from_query(
-                "my_kb.s3db",
-                vertex_query="SELECT id FROM vertices WHERE value = 1"
-            )
-        """
-        G = nx.DiGraph()
+    def build_from_query(
+        db_name: str,
+        vertex_query: Optional[str] = None,
+        arc_query: Optional[str] = None,
+    ) -> nx.DiGraph:
+        """Build NetworkX graph from custom SQL queries."""
+        graph_nx = nx.DiGraph()
         kb = Knowledge(db_name)
-        cursor = kb.graph.db.conn.cursor()
-        
-        # Get vertices from query
-        if vertex_query:
-            cursor.execute(vertex_query)
-            vertex_ids = [row[0] for row in cursor.fetchall()]
-        else:
-            vertex_ids = kb.graph.get_vertices()
-        
-        # Add nodes
-        nodemap = {}
-        for vid in vertex_ids:
-            vertex = kb.graph.get_vertex(vid)
-            if vertex:
-                name = vertex['name']
-                value = vertex.get_value()
-                nodemap[vid] = name
-                G.add_node(vid, label=name, value=value)
-        
-        # Get arcs from query
-        if arc_query:
-            cursor.execute(arc_query)
-            arc_ids = [row[0] for row in cursor.fetchall()]
-        else:
-            arc_ids = kb.graph.get_arcs()
-        
-        # Add edges
-        for eid in arc_ids:
-            arc = kb.graph.get_arc(eid)
-            start = arc['start']
-            end = arc['end']
-            name = arc['name']
-            
-            # Only add edge if both vertices exist in our graph
-            if start in nodemap and end in nodemap:
-                G.add_edge(start, end, label=name)
-        
-        return G
 
+        conn = kb.graph.conn.connect()
+        cursor = conn.cursor()
+        try:
+            # Vertices
+            if vertex_query:
+                cursor.execute(vertex_query)
+                vertex_ids = [row[0] for row in cursor.fetchall()]
+            else:
+                vertex_ids = kb.graph.get_vertices()
+
+            nodemap = {}
+            for vertex_id in vertex_ids:
+                vertex = kb.graph.get_vertex(vertex_id)
+                if vertex is None:
+                    continue
+                name = _get_field(vertex, "name")
+                value = _get_field(vertex, "value")
+                nodemap[vertex_id] = name
+                graph_nx.add_node(vertex_id, label=name, value=value)
+
+            # Arcs
+            if arc_query:
+                cursor.execute(arc_query)
+                arc_ids = [row[0] for row in cursor.fetchall()]
+            else:
+                arc_ids = kb.graph.get_arcs()
+
+            for arc_id in arc_ids:
+                arc = kb.graph.get_arc(arc_id)
+                if arc is None:
+                    continue
+                start = _get_field(arc, "start")
+                end = _get_field(arc, "end")
+                label = _get_field(arc, "name")
+
+                # Only add edge if both endpoints exist in our filtered node set
+                if start in nodemap and end in nodemap:
+                    graph_nx.add_edge(start, end, label=label)
+
+            return graph_nx
+        finally:
+            try:
+                cursor.close()
+            except Exception:
+                pass
 
     @staticmethod
-    def save_as_html(graph: nx.DiGraph, filename: str, 
-                     height: str = "1200px", 
-                     width: str = "100%",
-                     physics: bool = True) -> str:
-        """Save graph as interactive HTML file with selection highlighting.
-        
-        Args:
-            graph: NetworkX graph to visualize
-            filename: Output HTML filename
-            height: Height of the visualization
-            width: Width of the visualization
-            physics: Whether to enable physics simulation
-            
-        Returns:
-            Absolute path to the saved HTML file
-        """
+    def save_as_html(
+        graph: nx.DiGraph,
+        filename: str,
+        height: str = "1200px",
+        width: str = "100%",
+        physics: bool = True,
+    ) -> str:
+        """Save graph as interactive HTML file."""
         pyvis_nt = Network(
             height=height,
             width=width,
@@ -131,22 +135,24 @@ class GraphBuilder:
             font_color="white",
             notebook=True,
             directed=True,
-            cdn_resources='in_line',
-            neighborhood_highlight=True
+            cdn_resources="in_line",
+            neighborhood_highlight=True,
         )
-        
-        # Configure physics for better layout
-        pyvis_nt.set_options("""
+
+        pyvis_nt.set_options(
+            """
         var options = {
           "physics": {
-            "enabled": """ + ("true" if physics else "false") + """,
+            "enabled": """
+            + ("true" if physics else "false")
+            + """,
             "barnesHut": {
-            "gravitationalConstant": -50000,
-            "centralGravity": 0.3,
-            "springLength": 50,
-            "springConstant": 0.04,
-            "damping": 0.09,
-            "avoidOverlap": 1
+              "gravitationalConstant": -50000,
+              "centralGravity": 0.3,
+              "springLength": 50,
+              "springConstant": 0.04,
+              "damping": 0.09,
+              "avoidOverlap": 1
             }
           },
           "interaction": {
@@ -157,20 +163,17 @@ class GraphBuilder:
             "keyboard": true
           }
         }
-        """)
+        """
+        )
 
-        
         pyvis_nt.from_nx(graph)
-        
-        # Generate HTML with selection highlighting
+
         html = pyvis_nt.generate_html()
-        
-        # Write with UTF-8 encoding
-        with open(filename, 'w', encoding='utf-8') as f:
+        with open(filename, "w", encoding="utf-8") as f:
             f.write(html)
-        
+
         abs_path = os.path.abspath(filename)
         print(f"Graph saved to {filename}")
         print(f"Open it in your browser: file:///{abs_path}")
-        
+
         return abs_path

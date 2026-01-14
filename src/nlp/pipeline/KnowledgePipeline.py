@@ -12,10 +12,7 @@ from spacy.lang.en.stop_words import STOP_WORDS
 from core.utilities.Patterns import Action, ChainOfResponsibility
 from cor.knowledge.Knowledge import Knowledge
 from nlp.preprocessing.TextCleaner import TextCleaner
-from nlp.preprocessing.CoreferenceResolver import CoreferenceResolver
 from nlp.extraction.SRLExtractor import SRLExtractor
-from nlp.providers.contracts import SRLProvider, CorefResolver
-from nlp.providers.spacy_backends import SpacySRLProvider, HeuristicCorefProvider
 from nlp.providers.factory import create_srl_provider, create_coref_resolver
 from nlp.visualization.GraphBuilder import GraphBuilder
 
@@ -59,33 +56,20 @@ class CleanTextAction(Action):
         )
 
 
-class SplitSentencesAction(Action):
-    def __init__(self, pipeline: "KnowledgePipeline"):
-        self.pipeline = pipeline
-
-    def execute(self, ctxt: NLPPipelineContext):
-        if ctxt.verbose:
-            print("Processing sentences...")
-        ctxt.doc = self.pipeline.nlp(ctxt.cleaned_text)
-        ctxt.sentences = list(ctxt.doc.sents)
-
-
 class ExtractSRLAction(Action):
     def __init__(self, pipeline: "KnowledgePipeline"):
         self.pipeline = pipeline
 
     def execute(self, ctxt: NLPPipelineContext):
-        from tqdm import tqdm
-        srl_results = []
-        iterator = tqdm(ctxt.sentences, desc="Extracting SRL", unit="sentence") if ctxt.verbose else ctxt.sentences
+        if ctxt.verbose:
+            print("Extracting SRL...")
 
-        for sent in iterator:
-            results = self.pipeline.srl_provider.extract_primitives(sent.text)
-            for result in results:
-                if result["subjects"] or result["objects"]:
-                    srl_results.append(result)
+        results = self.pipeline.srl_provider.extract_primitives(ctxt.cleaned_text)
 
-        ctxt.srl_results = srl_results
+        ctxt.srl_results = [
+            r for r in results
+            if r.get("subjects") or r.get("objects")
+        ]
 
 
 class SaveToDatabaseAction(Action):
@@ -148,7 +132,6 @@ class KnowledgePipeline:
         chain = ChainOfResponsibility.generate(
             [
                 CleanTextAction(self),
-                SplitSentencesAction(self),
                 ExtractSRLAction(self),
                 SaveToDatabaseAction(self),
             ]
