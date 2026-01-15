@@ -16,7 +16,7 @@ class Concept(Vertex):
 
 	@staticmethod
 	def clone(v):
-		return Concept(v.id, v.weight, v.name, v.guid)
+		return Concept(v.name, v.id, v.weight, v.name, v.guid)
 
 	def OF(self):
 		pass
